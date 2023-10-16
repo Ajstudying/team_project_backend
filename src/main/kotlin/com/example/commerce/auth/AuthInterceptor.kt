@@ -1,6 +1,6 @@
 package com.example.commerce.auth
 
-import com.example.commerce.auth.util.Auth
+import com.example.commerce.auth.Auth
 import com.example.commerce.auth.util.JwtUtil
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
