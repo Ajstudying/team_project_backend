@@ -1,7 +1,7 @@
 package com.example.commerce.auth
 
 data class SignupRequest (
-    val username: String,
+    val userId: String,
     val password: String,
     val nickname: String,
     val phone: String,
@@ -11,5 +11,5 @@ data class SignupRequest (
 data class AuthProfile (
     val id: Long = 0, // 프로필 id
     val nickname: String, // 프로필 별칭
-    val username: String, // 로그인 사용자이름
+    val userId: String, // 로그인 사용자이름
 )

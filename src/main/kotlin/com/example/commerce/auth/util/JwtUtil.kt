@@ -14,14 +14,14 @@ object JwtUtil {
     val TOKEN_TIMEOUT = (1000 * 60 * 60 * 24 * 7).toLong()
 
     //토큰 생성
-    fun createToken(id: Long, username: String, nickname:String): String {
+    fun createToken(id: Long, userId: String, nickname:String): String {
         val now = Date()
 
         val exp = Date(now.time + TOKEN_TIMEOUT)
         val algorithm = Algorithm.HMAC256(secret)
         return JWT.create()
             .withSubject(id.toString())
-            .withClaim("username", username)
+            .withClaim("userId", userId)
             .withClaim("nickname", nickname)
             .withIssuedAt(now)
             .withExpiresAt(exp)
@@ -37,9 +37,9 @@ object JwtUtil {
             val decodedJWT : DecodedJWT = verifier.verify(token)
             val id: Long = java.lang.Long.valueOf(decodedJWT.subject)
             val nickname: String = decodedJWT.getClaim("nickname").asString()
-            val username: String = decodedJWT.getClaim("username").asString()
+            val userId: String = decodedJWT.getClaim("userId").asString()
 
-            AuthProfile(id, nickname, username)
+            AuthProfile(id, nickname, userId)
 
         }catch (e: JWTVerificationException){
             //토큰 검증 오류 상황
