@@ -34,7 +34,7 @@ class AuthInterceptor : HandlerInterceptor {
             }
 
             val profile: AuthProfile? =
-                JwtUtil.validateToken(token.replace("Bearer", ""))
+                JwtUtil.validateToken(token.replace("Bearer ", "").trim())
             if(profile == null) {
                 //인증 토큰 오류
                 resonse.status = 401
