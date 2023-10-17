@@ -31,15 +31,15 @@ class AuthController(private val service: AuthService) {
 
     @PostMapping(value = ["/signin"])
     fun signIn(
-        @RequestParam username: String,
+        @RequestParam userid: String,
         @RequestParam password: String,
         res: HttpServletResponse,
     ): ResponseEntity<*> {
         //값이 들어온 것을 확인
-        println(username)
+        println(userid)
         println(password)
 
-        val (result, message) = service.authenticate(username, password)
+        val (result, message) = service.authenticate(userid, password)
         println(result)
         if(result) {
             // cookie와 헤더를 생성한 후 리다이렉트
@@ -56,7 +56,7 @@ class AuthController(private val service: AuthService) {
                 .status(HttpStatus.FOUND)
                 .location(
                     ServletUriComponentsBuilder
-                        .fromHttpUrl("http://localhost:5500")
+                        .fromHttpUrl("http://localhost:5000")
                         .build().toUri()
                 )
                 .build<Any>()
@@ -66,7 +66,7 @@ class AuthController(private val service: AuthService) {
             .status(HttpStatus.FOUND)
             .location(
                 ServletUriComponentsBuilder
-                    .fromHttpUrl("http://localhost:5500/login.html?err=$message")
+                    .fromHttpUrl("http://localhost:5000/login.html?err=$message")
                     .build().toUri()
             )
             .build<Any>()

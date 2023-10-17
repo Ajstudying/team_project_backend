@@ -19,7 +19,7 @@ class AuthService(private val database: Database) {
     fun createIdentity(req: SignupRequest) : Long {
         //계정 중복 확인
         val record = transaction {
-            Identities.select { Identities.username eq req.username }.singleOrNull()
+            Identities.select { Identities.userid eq req.userid }.singleOrNull()
         }
         if(record != null) {
             return 0;
@@ -29,7 +29,7 @@ class AuthService(private val database: Database) {
         val profileId = transaction {
             try{
                 val identityId = Identities.insertAndGetId {
-                    it[this.username] = req.username
+                    it[this.userid] = req.userid
                     it[this.secret] = secret
                 }
 
@@ -50,12 +50,12 @@ class AuthService(private val database: Database) {
         return profileId
     }
 
-    fun authenticate(username: String, password: String) : Pair<Boolean, String> {
+    fun authenticate(userid: String, password: String) : Pair<Boolean, String> {
         val (result, payload) = transaction(database.transactionManager.defaultIsolationLevel, readOnly = true) {
             val i = Identities
             val p = Profiles
             //인증정보 조회
-            val identityRecord = i.select{i.username eq username}.singleOrNull()
+            val identityRecord = i.select{i.userid eq userid}.singleOrNull()
                 ?: return@transaction Pair(false, mapOf("message" to "Unauthorized"))
             //프로필 정보조회
             val profileRecord = p.select{p.identityId eq identityRecord[i.id].value}.singleOrNull()
@@ -64,7 +64,7 @@ class AuthService(private val database: Database) {
             return@transaction Pair(true, mapOf(
                 "id" to profileRecord[p.id],
                 "nickname" to profileRecord[p.nickname],
-                "username" to identityRecord[i.username],
+                "userid" to identityRecord[i.userid],
                 "secret" to identityRecord[i.secret]
             ))
         }
@@ -79,7 +79,7 @@ class AuthService(private val database: Database) {
         }
         val token = JwtUtil.createToken(
             payload["id"].toString().toLong(),
-            payload["username"].toString(),
+            payload["userid"].toString(),
             payload["nickname"].toString()
         )
         return Pair(true, token)
