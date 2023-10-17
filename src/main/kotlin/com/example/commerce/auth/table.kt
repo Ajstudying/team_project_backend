@@ -9,13 +9,13 @@ import org.springframework.context.annotation.Configuration
 
 object Identities : LongIdTable("identity"){
     val secret = varchar("secret", 200)
-    val userId = varchar("userId", length = 100)
+    val userid = varchar("userid", length = 100)
 }
 
 object Profiles : LongIdTable("profile") {
     val email = varchar("email", 200)
     val nickname = varchar("nickname", 100)
-    val phone = varchar("phone", 11)
+    val phone = varchar("phone", 15)
     val identityId = reference("identity_id", Identities)
 }
 @Configuration
