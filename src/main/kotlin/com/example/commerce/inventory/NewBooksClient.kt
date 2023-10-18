@@ -10,3 +10,4 @@ interface NewBooksClient {
     @GetMapping
     fun fetch() : NewBookDataResponse
 }
+

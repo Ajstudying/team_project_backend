@@ -1,6 +1,5 @@
 package com.example.commerce.inventory
 
-import com.example.commerce.books.BookResponse
 import com.example.commerce.books.NewBookResponse
 import com.example.commerce.books.NewBooks
 import org.jetbrains.exposed.sql.insert
@@ -14,13 +13,15 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/endpoint")
-class OpenApiController {
+class NewBookApiController {
     private val newBooksClient: NewBooksClient
 
     @Autowired
     constructor(newBooksClient: NewBooksClient) {
         this.newBooksClient = newBooksClient
     }
+
+
 
     @PostMapping
     fun postDataToMyServer(): ResponseEntity<Any> {
@@ -57,6 +58,10 @@ class OpenApiController {
         return ResponseEntity.status(HttpStatus.OK).build()
 
     }
+
+
+
+
 
 
 }

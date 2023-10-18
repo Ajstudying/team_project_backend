@@ -8,12 +8,13 @@ import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.context.annotation.Configuration
+import org.springframework.http.HttpStatus.Series
 
 //책 테이블
 object Books : Table("books") {
     val id = long("id").autoIncrement().uniqueIndex()
     val publisher = varchar("publisher",32)
-    val title = varchar("title", 255)
+    val title = varchar("title", 512)
     val link = varchar("link", 512)
     val author = varchar("author", 512)
     val pubDate = varchar("pub_date", 10)

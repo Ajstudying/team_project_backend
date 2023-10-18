@@ -26,7 +26,7 @@ class BookController (private val resourceLoader: ResourceLoader) {
 
     @GetMapping("/best")
     fun pagingBest(@RequestParam size: Int, @RequestParam page: Int)
-    : Page<BookListResponse> = transaction (Connection.TRANSACTION_READ_COMMITTED, readOnly = true){
+    : Page<BookBestResponse> = transaction (Connection.TRANSACTION_READ_COMMITTED, readOnly = true){
         val b = Books
 //        val c = Carts
 
@@ -39,7 +39,7 @@ class BookController (private val resourceLoader: ResourceLoader) {
 
         Books.selectAll()
 //            .orderBy(Cart.sales_amt to SortOrder.DESC)
-            .map{ r -> BookListResponse(
+            .map{ r -> BookBestResponse(
             r[Books.id], r[Books.publisher], r[Books.title], r[Books.link], r[Books.author], r[Books.pubDate],
             r[Books.description], r[Books.itemId], r[Books.priceSales],
             r[Books.priceStandard],  r[Books.stockStatus], r[Books.cover],
@@ -68,11 +68,42 @@ class BookController (private val resourceLoader: ResourceLoader) {
         return@transaction PageImpl(content, PageRequest.of(page, size), totalCount)
     }
 
+
+    //카테고리
+//    @GetMapping("/category")
+//    fun divideBook(
+//        @RequestParam size: Int, @RequestParam page: Int, @RequestParam option: String?)
+//    :Page<BookListResponse> = transaction(Connection.TRANSACTION_READ_UNCOMMITTED, readOnly = true) {
+//
+//        val b = Books
+//
+//        val query = when {
+//            option != null -> {
+//                Books.select { Substring(b.categoryName, 1 as Expression<Int>, 4 as Expression<Int>) like "$option" }
+//            }else -> {
+//                // 검색어가 없을시 전체 조회
+//                Books.selectAll()
+//            }
+//        }
+//        //전체 결과 카운트
+//        val totalCount = query.count()
+//        val content = query.orderBy(b.id to SortOrder.DESC).limit(size, offset = (size * page).toLong())
+//            .map{
+//                    r -> BookListResponse(
+//                r[b.id], r[b.publisher], r[b.title], r[b.link], r[b.author], r[b.pubDate],
+//                r[b.description], r[b.itemId], r[b.priceSales],
+//                r[b.priceStandard], r[b.stockStatus], r[b.cover], r[b.categoryId], r[b.categoryName],
+//            ) }
+//        return@transaction PageImpl(content, PageRequest.of(page, size), totalCount)
+//    }
+
+
     //카테고리 검색 및 검색
     @GetMapping("/paging/search")
     fun searchPaging(
         @RequestParam size: Int, @RequestParam page: Int, @RequestParam option: String?, @RequestParam keyword: String?
-    ):Page<BookResponse> = transaction(Connection.TRANSACTION_READ_UNCOMMITTED, readOnly = true) {
+    ):Page<BookListResponse> = transaction(Connection.TRANSACTION_READ_UNCOMMITTED, readOnly = true) {
+        println(option + "조회")
 
         //단축 이름 변수 사용
         val b = Books
@@ -81,24 +112,41 @@ class BookController (private val resourceLoader: ResourceLoader) {
         //집계 함수식의 별칭 설정
         val commentCount = c.id.count()
 
+//        val commonQuery = (b innerJoin c)
+//            .slice(b.id, b.publisher, b.title, b.link, b.author, b.pubDate,
+//                b.description, b.itemId, b.priceSales,
+//                b.priceStandard,b.stockStatus,b.cover,b.categoryId,b.categoryName,
+//                commentCount)
+//            .groupBy(b.id)
+
         //검색 조건 설정
         val query = when {
+
             option != null -> {
                 // 카테고리를 나누는 동작 처리
-                Books.select { b.categoryName like "%${option}%" }
+                (b leftJoin c)
+                    .slice(b.id, b.publisher, b.title, b.link, b.author, b.pubDate, b.description,
+                    b.itemId, b.priceSales, b.priceStandard, b.stockStatus,
+                    b.cover, b.categoryId, b.categoryName, commentCount)
+                    .select { Substring(b.categoryName, intLiteral(1), intLiteral(4)) like "$option%" }
+                    .groupBy(b.id)
             }
             keyword != null -> {
                 // 옵션 검색 동작 처리
-                Books.select {
+                (b leftJoin c)
+                    .slice(b.id, b.publisher, b.title, b.link, b.author, b.pubDate, b.description,
+                        b.itemId, b.priceSales, b.priceStandard, b.stockStatus,
+                        b.cover, b.categoryId, b.categoryName, commentCount)
+                    .select {
                     (b.title like "%${keyword}%") or
                             (b.categoryName like "%${keyword}%") or
                             (b.author like "%${keyword}%") or
-                            (b.publisher like "%${keyword}%")
-                }
+                            (b.publisher like "%${keyword}%") }
+                    .groupBy(b.id)
             }
             else -> {
                 // 검색어가 없을시 전체 조회
-                b.selectAll()
+                b.selectAll().groupBy(b.id)
             }
         }
 
@@ -106,9 +154,9 @@ class BookController (private val resourceLoader: ResourceLoader) {
         val totalCount = query.count()
         val content = query.orderBy(b.id to SortOrder.DESC).limit(size, offset = (size * page).toLong())
             .map{
-                    r -> BookResponse(
+                    r -> BookListResponse(
                 r[b.id], r[b.publisher], r[b.title], r[b.link], r[b.author], r[b.pubDate],
-                r[b.description], r[b.isbn], r[b.isbn13], r[b.itemId], r[b.priceSales],
+                r[b.description], r[b.itemId], r[b.priceSales],
                 r[b.priceStandard], r[b.stockStatus], r[b.cover], r[b.categoryId], r[b.categoryName],r[commentCount]
             ) }
         return@transaction PageImpl(content, PageRequest.of(page, size), totalCount)
