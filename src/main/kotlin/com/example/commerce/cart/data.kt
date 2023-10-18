@@ -7,11 +7,11 @@ data class CartRequest(
 data class CartCreateRequest(
     val cartId: Long,       // 장바구니 id
     val itemId: Int,        // book id
-    val qty: Int,           // book 수량
+    val quantity: Int,           // book 수량
 )
 
 fun CartCreateRequest.validate() =
-    !((this.cartId == 0L) || (this.itemId == 0) || (qty == 0))
+    !((this.cartId == 0L) || (this.itemId == 0) || (quantity == 0))
 
 data class CartItemsCreateRequest(
     val cartId: Long,       // 장바구니 id
@@ -27,8 +27,11 @@ data class CartResponse(
 data class CartItemRequest(
     val profileId: Long,    // 사용자 id
     val itemId: Int,        // book id
-    val qty: Int,           // book 수량
+    val quantity: Int,      // book 수량
 )
+
+fun CartItemRequest.validate() =
+    !((this.itemId == 0) || (quantity == 0))
 
 data class CartItemResponse(
 //    val cartId: Long,       // 장바구니 id
@@ -38,6 +41,7 @@ data class CartItemResponse(
     val author: String,
     val priceStandard: Int,
     val priceSales: Int,
-    val qty: Int,           // book 수량
+    val categoryName: String,
+    val quantity: Int,           // book 수량
 )
 
