@@ -54,6 +54,7 @@ dependencies {
 	implementation("org.jetbrains.exposed:exposed-json:$exposedVersion")
 	implementation("org.jetbrains.exposed:exposed-money:$exposedVersion")
 	implementation("org.jetbrains.exposed:exposed-spring-boot-starter:$exposedVersion")
+
 }
 
 dependencyManagement {
