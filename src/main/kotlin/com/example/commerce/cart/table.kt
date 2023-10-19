@@ -45,10 +45,6 @@ object CartItem : Table("cart_item") {
     override val primaryKey = PrimaryKey(CartItem.id)
 }
 
-// 주문 테이블
-object Order : LongIdTable("order") {
-
-}
 
 //테이블 생성
 @Configuration
@@ -56,7 +52,7 @@ class CartTableSetUp(private val database: Database) {
     @PostConstruct
     fun migrateSchema() {
         transaction(database) {
-            SchemaUtils.createMissingTablesAndColumns(Cart, CartItem, Order)
+            SchemaUtils.createMissingTablesAndColumns(Cart, CartItem)
         }
     }
 }

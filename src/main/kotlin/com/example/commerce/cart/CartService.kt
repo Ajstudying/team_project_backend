@@ -23,13 +23,14 @@ class CartService(private val database: Database) {
         var insertCartId = 0L;
         val existCartId = transaction {
             Cart.slice(Cart.id)
-                    .select { Cart.profileId eq authProfile.id }
-                    .singleOrNull()
+                .select { Cart.profileId eq authProfile.id }
+                .singleOrNull()
         }
 
         val cartId = transaction {
             try {
 
+                // 장바구니 id가 생성되어 있지 않으면 등록함
                 if (existCartId == null) {
                     // 장바구니 등록
                     insertCartId = Cart.insert {

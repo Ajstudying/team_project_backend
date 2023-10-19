@@ -1,30 +1,36 @@
 package com.example.commerce.auth
 
 import com.example.commerce.auth.util.JwtUtil
+import com.example.commerce.books.Books
+import com.example.commerce.cart.Cart
+import com.example.commerce.cart.CartItem
+import com.example.commerce.cart.CartItemResponse
 import jakarta.servlet.http.Cookie
 import jakarta.servlet.http.HttpServletResponse
+import org.jetbrains.exposed.sql.JoinType
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.andWhere
+import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder
+import java.sql.Connection
 
 @RestController
 @RequestMapping("/auth")
 class AuthController(private val service: AuthService) {
 
     @PostMapping(value = ["/signup"])
-    fun signUp(@RequestBody req: SignupRequest): ResponseEntity<Long>{
+    fun signUp(@RequestBody req: SignupRequest): ResponseEntity<Long> {
         //객체가 들어온건지 확인
         println(req)
 
         val profileId = service.createIdentity(req)
-        if(profileId > 0) {
+        if (profileId > 0) {
             return ResponseEntity.status(HttpStatus.CREATED).body(profileId)
-        }else {
+        } else {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(profileId)
         }
     }
@@ -41,7 +47,7 @@ class AuthController(private val service: AuthService) {
 
         val (result, message) = service.authenticate(userid, password)
         println(result)
-        if(result) {
+        if (result) {
             // cookie와 헤더를 생성한 후 리다이렉트
             val cookie = Cookie("token", message)
             cookie.path = "/"
@@ -71,4 +77,30 @@ class AuthController(private val service: AuthService) {
             )
             .build<Any>()
     }
+
+    @Auth
+    @GetMapping(value = ["/profile"])
+    fun fetch(@RequestAttribute authProfile: AuthProfile): AuthProfileExtends? = transaction {
+
+        println("<<< AuthController (/) >>>")
+        println("-- 입력값 확인 : authProfile.id : " + authProfile.id)
+
+        val p = Profiles
+
+        //프로필 정보조회
+        val profileRecord: AuthProfileExtends? = p.select { p.identityId eq authProfile.id }
+            .singleOrNull()
+            ?.let { r ->
+                AuthProfileExtends(
+                    r[p.nickname],
+                    r[p.phone],
+                    r[p.email],
+                )
+            }
+
+        println("-- 결과값 확인 : " + profileRecord)
+
+        return@transaction profileRecord
+    }
+
 }
