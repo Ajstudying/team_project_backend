@@ -11,8 +11,8 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpStatus.Series
 
 //책 테이블
-object Books : Table("books") {
-    val id = long("id").autoIncrement().uniqueIndex()
+object Books : LongIdTable("books") {
+//    val id = long("id").autoIncrement().uniqueIndex()
     val publisher = varchar("publisher",32)
     val title = varchar("title", 512)
     val link = varchar("link", 512)
@@ -29,11 +29,12 @@ object Books : Table("books") {
     val categoryId = integer("category_id")
     val categoryName = varchar("category_name", 255)
     val customerReviewRank = integer("customer_review_rank")
-    override val primaryKey = PrimaryKey(id)
+//    override val primaryKey = PrimaryKey(id)
 }
 
 //댓글 테이블
 object BookComments : LongIdTable("book_comment") {
+    val newBookId = reference("new_book_id", NewBooks.id)
     val bookId = reference("book_id", Books.id)
     val comment = text("comment")
     val profileId = reference("profile_id", Profiles)
@@ -55,6 +56,7 @@ object NewBooks : LongIdTable("new_books") {
     val cover = varchar("cover", 512)
     val categoryId = integer("category_id")
     val categoryName = varchar("category_name", 255)
+    val customerReviewRank = integer("customer_review_rank")
 }
 
 
