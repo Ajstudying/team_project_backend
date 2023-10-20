@@ -77,7 +77,7 @@ class AuthController(private val service: AuthService) {
             )
             .build<Any>()
     }
-cd
+
     @Auth
     @GetMapping(value = ["/profile"])
     fun fetch(@RequestAttribute authProfile: AuthProfile): AuthProfileExtends? = transaction {
