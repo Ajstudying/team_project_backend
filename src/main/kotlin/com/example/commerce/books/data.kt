@@ -59,10 +59,11 @@ data class NewBookDataResponse (
     val query: String,
     val searchCategoryId: Int,
     val searchCategoryName: String,
-    val item: List<NewBookResponse>
+    val item: List<BookDataResponse>
 )
 
-data class NewBookResponse (
+data class BookDataResponse (
+    val id: Long,
     val publisher: String,
     val title: String,
     val link: String,
