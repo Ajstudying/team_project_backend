@@ -1,40 +1,30 @@
 package com.example.commerce.order
 
-data class CartRequest(
-    val cartId: Long,        // 장바구니 id
+data class OrderRequest(
+    val orderId: Long,        // 주문 id
 )
 
-data class CartCreateRequest(
-    val cartId: Long,       // 장바구니 id
+data class OrderCreateRequest(
+    val paymentMethod: String,       // 결제수단
+    val orderStatus: String,         // 주문상태 (1: 완료, 2:취소)
+    val orderItems: MutableList<OrderItemRequest>,  // 주문 item 목록
+    val orderAddress: OrderAddressRequest,   // 배송지
+)
+
+fun OrderCreateRequest.validate() =
+    !((this.paymentMethod.equals("")) || (this.orderStatus.equals("")))
+
+
+data class OrderItemRequest(
     val itemId: Int,        // book id
-    val quantity: Int,           // book 수량
+    val quantity: Int,  // 수량
+    val orderPrice: Int,// 주문금액
 )
 
-fun CartCreateRequest.validate() =
-    !((this.cartId == 0L) || (this.itemId == 0) || (quantity == 0))
-
-data class CartItemsCreateRequest(
-    val cartId: Long,       // 장바구니 id
-    val cartItems: MutableList<CartItemResponse>,  // 장바구니 item 목록
-)
-
-data class CartResponse(
-    val cartId: Long,        // 장바구니 id
-    val profileId: Long,     // 사용자 id
-    val cartItems: MutableList<CartItemResponse>,  // 장바구니 item 목록
-)
-
-data class CartItemRequest(
-    val profileId: Long,    // 사용자 id
-    val itemId: Int,        // book id
-    val quantity: Int,      // book 수량
-)
-
-fun CartItemRequest.validate() =
+fun OrderItemRequest.validate() =
     !((this.itemId == 0) || (quantity == 0))
 
-data class CartItemResponse(
-//    val cartId: Long,       // 장바구니 id
+data class OrderItemResponse(
     val itemId: Int,        // book id
     val title: String,
     val cover: String,
@@ -45,3 +35,8 @@ data class CartItemResponse(
     val quantity: Int,           // book 수량
 )
 
+data class OrderAddressRequest(
+    val postcode: String,       // 우편번호
+    val address: String,        // 기본주소
+    val detailAddress: String,  // 상세주소
+)
