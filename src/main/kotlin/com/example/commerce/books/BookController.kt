@@ -1,6 +1,7 @@
 package com.example.commerce.books
 
 import com.example.commerce.auth.Auth
+import com.example.commerce.auth.AuthProfile
 import com.example.commerce.auth.Profiles
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
@@ -15,6 +16,8 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestAttribute
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -214,7 +217,8 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
                     (b.title like "%${keyword}%") or
                             (b.categoryName like "%${keyword}%") or
                             (b.author like "%${keyword}%") or
-                            (b.publisher like "%${keyword}%") }
+                            (b.publisher like "%${keyword}%") or
+                            (b.title like "%${keyword}%") }
                     .groupBy(b.id)
             }
             else -> {
@@ -262,27 +266,70 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
         println("신간상세페이지조회")
         val n = NewBooks
         val c = BookComments
+        val pf = Profiles;
         //집계 함수식의 별칭 설정
         val commentCountAlias = c.id.count().alias("commentCount")
 
+        val slices =  (n leftJoin ( c innerJoin pf ))
+            .slice(n.columns + commentCountAlias + pf.identityId)
+
+        val comments: List<BookCommentResponse> = transaction {
+            slices
+                .select { (BookComments.newBookId eq id) }
+                .mapNotNull { r -> BookCommentResponse(
+                    r[c.id].value, r[c.comment], r[pf.nickname]
+                ) }
+        }
+
         val book = transaction {
-            (n leftJoin  c)
-                .slice(n.columns + commentCountAlias)
-                .select { (NewBooks.id eq id)}
+            slices
+                .select { (NewBooks.id eq id) }
                 .groupBy(n.id)  // groupBy 메소드로 그룹화할 기준 컬럼들을 지정
                 .mapNotNull { r -> BookResponse(
                     r[n.id].value, r[n.publisher], r[n.title], r[n.link], r[n.author], r[n.pubDate],
                     r[n.description], r[n.isbn], r[n.isbn13], r[n.itemId], r[n.priceSales],
-                    r[n.priceStandard], r[n.stockStatus], r[n.cover], r[n.categoryId], r[n.categoryName], r[commentCountAlias],
+                    r[n.priceStandard], r[n.stockStatus], r[n.cover], r[n.categoryId], r[n.categoryName],
+                    r[commentCountAlias],
+//                    comments
                 ) }
                 .singleOrNull() }
+
         return book?.let { ResponseEntity.ok(it) } ?:
         ResponseEntity.status(HttpStatus.NOT_FOUND).build()
     }
 
-    //도서정보 추가
-//    @PostMapping
-//    fun addBook()
+    @Auth
+    @PostMapping("/{id}")
+    fun createComment (@PathVariable id: Int, @RequestBody createCommentRequest: CreateCommentRequest, @RequestAttribute authProfile: AuthProfile)
+    : ResponseEntity<Any> {
+        println("${createCommentRequest.new} 신간인가")
+        println(createCommentRequest.comment)
+
+        if(!createCommentRequest.validate()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
+        }
+        val result = try {
+            transaction {
+                val response = BookComments.insert {
+                    it[comment] = createCommentRequest.comment
+                    it[profileId] = authProfile.id
+                    if (createCommentRequest.new == 0) {
+                        it[newBookId] = id.toLong()
+                    } else {
+                        it[bookId] = id.toLong()
+                    }
+                }.resultedValues
+                    ?: return@transaction ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                response
+            }
+        } catch (e: Exception) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred.")
+        }
+
+        return ResponseEntity.status(HttpStatus.CREATED).build()
+    }
+
+
 
 
 
