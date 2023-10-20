@@ -17,17 +17,20 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.context.annotation.Configuration
 
 // 주문 테이블
-object Order : Table("order") {
+object Orders : Table("orders") {
     val id = long("id").autoIncrement().uniqueIndex()
 
     // 주문일자
     val orderDate = datetime("order_date")
 
+    // 결제수단
+    val paymentMethod = varchar("payment_method", 1)
+
     // 주문상태 (1: 완료, 2:취소)
-    val orderStatus = datetime("order_status")
+    val orderStatus = varchar("order_status", 1)
 
     // 주문 key
-    override val primaryKey = PrimaryKey(Order.id)
+    override val primaryKey = PrimaryKey(Orders.id)
 }
 
 
@@ -45,7 +48,7 @@ object OrderItem : Table("order_item") {
     val orderPrice = integer("order_price")
 
     // 주문번호
-    var orderId = reference("order_id", Order.id)
+    var orderId = reference("order_id", Orders.id)
 
 
     // 주문 item key
@@ -58,16 +61,16 @@ object OrderAddress : Table("order_address") {
     val id = long("id").autoIncrement().uniqueIndex()
 
     // 우편번호
-    val postcode = integer("postcode")
+    val postcode = varchar("postcode", 6)
 
     // 기본주소
-    val address = integer("address")
+    val address = varchar("address", 100)
 
     // 상세주소
-    val detailAddress = integer("detail_address")
+    val detailAddress = varchar("detail_address", 100)
 
     // 주문번호
-    var orderId = reference("order_id", Order.id)
+    var orderId = reference("order_id", Orders.id)
 
     // 주문 item key
     override val primaryKey = PrimaryKey(OrderAddress.id)
@@ -80,7 +83,7 @@ class OrderTableSetUp(private val database: Database) {
     @PostConstruct
     fun migrateSchema() {
         transaction(database) {
-            SchemaUtils.createMissingTablesAndColumns(Order, OrderItem, OrderAddress)
+            SchemaUtils.createMissingTablesAndColumns(Orders, OrderItem, OrderAddress)
         }
     }
 }

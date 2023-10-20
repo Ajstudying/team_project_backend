@@ -1,9 +1,7 @@
 package com.example.commerce.order
 
 import com.example.commerce.auth.AuthProfile
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -15,60 +13,96 @@ class OrderService(private val database: Database) {
     //에러 로그 확인을 위해
     private val logger = LoggerFactory.getLogger(this.javaClass.name)
 
-    fun createOrder(req: CartItemRequest, authProfile: AuthProfile): Long {
 
-        println("\n<<< CartService createCart>>>")
-        println(" -- 입력값 확인 :  " + authProfile.id)
+    // 주문정보 생성
+    fun createOrders(orderData: OrderCreateRequest, authProfile: AuthProfile): Long {
+        var resultOrderId = 0L;
+        transaction {
 
-        val orderId = 1L;
+            try {
 
-//        var insertCartId = 0L;
-//        val existCartId = transaction {
-//            Cart.slice(Cart.id)
-//                .select { Cart.profileId eq authProfile.id }
-//                .singleOrNull()
-//        }
-//
-//        val cartId = transaction {
-//            try {
-//
-//                // 장바구니 id가 생성되어 있지 않으면 등록함
-//                if (existCartId == null) {
-//                    // 장바구니 등록
-//                    insertCartId = Cart.insert {
-//                        it[this.profileId] = authProfile.id;
-//                        it[this.createDate] = LocalDateTime.now()
-//                    } get Cart.id // Explicitly specify the Cart.id column
-//
-//                    println(" -- 장바구니 등록 insertCartId : " + insertCartId.toString())
-//                } else {
-//                    insertCartId = existCartId[Cart.id];
-//
-//                    println(" -- 장바구니 이미 존재 : " + insertCartId.toString())
-//                }
-//
-//                // 장바구니 item 등록
-//                val cartItemId = CartItem.insert {
-//                    it[this.cartId] = insertCartId
-//                    it[this.itemId] = req.itemId
-//                    it[this.quantity] = req.quantity
-//                    it[this.createDate] = LocalDateTime.now()
-//                    it[this.cartStatus] = "0"
-//                } get CartItem.id
-//
-//                println(" -- 장바구니 등록 cartItemId : " + cartItemId)
-//
-//
-//                return@transaction insertCartId
-//
-//            } catch (e: Exception) {
-//                rollback()
-//                //에러메세지 확인
-//                logger.error(e.message)
-//                return@transaction 0
-//            }
-//        }
-        return orderId;
+                // 주문을 생성하고 orderId 얻기
+                val orderId = createOrder(orderData, authProfile)
+
+                println(" -- 주문을 생성하고 orderId 얻기 : " + orderId)
+
+                // 주문 Item(도서)정보 등록
+                createOrderItem(orderData, orderId)
+
+                // 배송지 정보 등록
+                createOrderAddress(orderData, authProfile)
+
+                resultOrderId = orderId
+            } catch (e: Exception) {
+                rollback()
+                //에러메세지 확인
+                logger.error(e.message)
+                return@transaction 0
+            }
+
+        }
+        return resultOrderId
     }
+
+    // 주문을 생성하고 orderId 반환
+    fun createOrder(req: OrderCreateRequest, authProfile: AuthProfile): Long {
+        println("\n<<< OrderService createOrder >>>")
+        println(
+            "request Data ==> " +
+                    ",paymentMethod:" + req.paymentMethod +
+                    ",orderStatus:" + req.orderStatus
+        )
+
+        // Order.insert를 사용하여 주문 생성
+        val orderId = Orders.insert {
+            it[Orders.paymentMethod] = req.paymentMethod
+            it[Orders.orderStatus] = req.orderStatus
+            it[Orders.orderDate] = LocalDateTime.now()
+            // 다른 주문 정보 필드들을 채워넣어야 할 수 있음
+        } get Orders.id
+
+        println("response Data ==> orderId : " + orderId);
+
+        return orderId // orderId를 반환
+    }
+
+    // 주문 Item(도서)정보 등록
+    fun createOrderItem(req: OrderCreateRequest, orderId: Long) {
+        println("\n<<< OrderService createOrderItem >>>")
+
+
+        // 주문 항목을 Batch로 처리
+        val orderItems = req.orderItems
+        OrderItem.batchInsert(orderItems) { orderItem ->
+            this[OrderItem.orderId] = orderId
+            this[OrderItem.itemId] = orderItem.itemId
+            this[OrderItem.quantity] = orderItem.quantity
+            this[OrderItem.orderPrice] = orderItem.orderPrice
+        }
+    }
+
+    // 주문 배송지 정보 생성하고 orderId 반환
+    fun createOrderAddress(req: OrderCreateRequest, authProfile: AuthProfile): Long {
+        println("\n<<< OrderService createOrderAddress >>>")
+        println(
+            "request Data ==> " +
+                    ",postcode:" + req.orderAddress.postcode +
+                    ",address:" + req.orderAddress.address +
+                    ",detailAddress:" + req.orderAddress.detailAddress
+        )
+
+        // OrderAddress.insert를 사용하여 주문 배송지 생성
+        val orderAddressId = OrderAddress.insert {
+            it[OrderAddress.postcode] = req.orderAddress.postcode
+            it[OrderAddress.address] = req.orderAddress.address
+            it[OrderAddress.detailAddress] = req.orderAddress.detailAddress
+            // 다른 주문 정보 필드들을 채워넣어야 할 수 있음
+        } get OrderAddress.id
+
+        println("response Data ==> orderId : " + orderAddressId);
+
+        return orderAddressId // orderId를 반환
+    }
+
 
 }
