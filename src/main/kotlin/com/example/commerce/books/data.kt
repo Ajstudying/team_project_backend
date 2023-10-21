@@ -45,8 +45,16 @@ data class BookResponse (
     val cover: String,
     val categoryId: Int,
     val categoryName: String,
-    val commentCount: Long
+    val commentCount: Long,
+//    val bookComment : List<BookCommentResponse>
 )
+
+data class BookCommentResponse (
+    val id: Long,
+    val comment: String,
+    val nickname: String,
+)
+
 data class NewBookDataResponse (
     val version: String,
     val logo: String,
@@ -123,18 +131,10 @@ data class BookBestResponse (
 )
 
 
-data class BookCommentCountResponse (
-    val id: Long,
-    val title: String,
-    val categoryName: String,
-    val author: String,
-    val publisher: String,
-    val commentCount: Long
-)
 
-data class BookCreateRequest( val comment: String )
+data class CreateCommentRequest( val new: Int?, val comment: String)
 
-fun BookCreateRequest.validate() : Boolean {
+fun CreateCommentRequest.validate() : Boolean {
     return this.comment.isNotEmpty()
 }
 

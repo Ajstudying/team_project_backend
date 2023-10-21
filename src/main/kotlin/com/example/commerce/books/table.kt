@@ -34,8 +34,8 @@ object Books : LongIdTable("books") {
 
 //댓글 테이블
 object BookComments : LongIdTable("book_comment") {
-    val newBookId = reference("new_book_id", NewBooks.id)
-    val bookId = reference("book_id", Books.id)
+    val newBookId = reference("new_book_id", NewBooks.id).nullable()
+    val bookId = reference("book_id", Books.id).nullable()
     val comment = text("comment")
     val profileId = reference("profile_id", Profiles)
 }
