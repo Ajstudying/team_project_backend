@@ -36,6 +36,12 @@ class OrderController(private val service: OrderService) {
                     ",orderPrice:" + bookItem.orderPrice
         }
 
+        println(
+            ",postcode:" + request.orderAddress.postcode +
+                    ",address:" + request.orderAddress.address +
+                    ",detailAddress:" + request.orderAddress.detailAddress )
+
+
         // 필요한 request 값이 빈값이면 400 : Bad request
         if (!request.validate()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(400)

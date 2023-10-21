@@ -36,7 +36,10 @@ data class OrderItemResponse(
 )
 
 data class OrderAddressRequest(
+    val deliveryName: String,   // 배송자명
+    val deliveryPhone: String,  // 배송자 핸드폰번호
     val postcode: String,       // 우편번호
     val address: String,        // 기본주소
     val detailAddress: String,  // 상세주소
+    val deliveryMemo: String,   // 배송요청사항
 )

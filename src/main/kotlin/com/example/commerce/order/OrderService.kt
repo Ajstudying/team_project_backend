@@ -21,16 +21,16 @@ class OrderService(private val database: Database) {
 
             try {
 
-                // 주문을 생성하고 orderId 얻기
+                // 1. 주문을 생성하고 orderId 얻기
                 val orderId = createOrder(orderData, authProfile)
 
                 println(" -- 주문을 생성하고 orderId 얻기 : " + orderId)
 
-                // 주문 Item(도서)정보 등록
+                // 2. 주문 Item(도서)정보 등록
                 createOrderItem(orderData, orderId)
 
-                // 배송지 정보 등록
-                createOrderAddress(orderData, authProfile)
+                // 3. 배송지 정보 등록
+                createOrderAddress(orderData, orderId)
 
                 resultOrderId = orderId
             } catch (e: Exception) {
@@ -82,7 +82,7 @@ class OrderService(private val database: Database) {
     }
 
     // 주문 배송지 정보 생성하고 orderId 반환
-    fun createOrderAddress(req: OrderCreateRequest, authProfile: AuthProfile): Long {
+    fun createOrderAddress(req: OrderCreateRequest, orderId: Long): Long {
         println("\n<<< OrderService createOrderAddress >>>")
         println(
             "request Data ==> " +
@@ -93,6 +93,7 @@ class OrderService(private val database: Database) {
 
         // OrderAddress.insert를 사용하여 주문 배송지 생성
         val orderAddressId = OrderAddress.insert {
+            it[OrderAddress.orderId] = orderId
             it[OrderAddress.postcode] = req.orderAddress.postcode
             it[OrderAddress.address] = req.orderAddress.address
             it[OrderAddress.detailAddress] = req.orderAddress.detailAddress
