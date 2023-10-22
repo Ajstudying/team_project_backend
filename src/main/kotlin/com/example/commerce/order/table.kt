@@ -1,14 +1,6 @@
 package com.example.commerce.order
 
-import com.example.commerce.auth.Profiles
-import com.example.commerce.books.Books
-import com.example.commerce.books.Books.autoIncrement
-import com.example.commerce.books.Books.uniqueIndex
-import com.example.commerce.cart.Cart
-import com.example.commerce.cart.Cart.autoIncrement
-import com.example.commerce.cart.Cart.uniqueIndex
 import jakarta.annotation.PostConstruct
-import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.Table
@@ -16,6 +8,7 @@ import org.jetbrains.exposed.sql.javatime.datetime
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.context.annotation.Configuration
 
+//ALTER TABLE Orders AUTO_INCREMENT = 2023123456789;
 // 주문 테이블
 object Orders : Table("orders") {
     val id = long("id").autoIncrement().uniqueIndex()
@@ -25,6 +18,9 @@ object Orders : Table("orders") {
 
     // 결제수단
     val paymentMethod = varchar("payment_method", 1)
+
+    // 결제금액
+    val paymentPrice = integer("payment_price")
 
     // 주문상태 (1: 완료, 2:취소)
     val orderStatus = varchar("order_status", 1)
@@ -68,6 +64,9 @@ object OrderAddress : Table("order_address") {
 
     // 상세주소
     val detailAddress = varchar("detail_address", 100)
+
+    // 배송요청사항
+    var deliveryMemo = varchar("delivery_memo", 500).nullable()
 
     // 주문번호
     var orderId = reference("order_id", Orders.id)

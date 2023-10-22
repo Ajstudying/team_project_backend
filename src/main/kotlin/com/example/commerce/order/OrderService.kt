@@ -1,7 +1,10 @@
 package com.example.commerce.order
 
 import com.example.commerce.auth.AuthProfile
+import com.example.commerce.cart.Cart
+import com.example.commerce.cart.CartItem
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -16,9 +19,25 @@ class OrderService(private val database: Database) {
 
     // 주문정보 생성
     fun createOrders(orderData: OrderCreateRequest, authProfile: AuthProfile): Long {
+        var c = Cart
+
+        // 장바구니 id 얻기
+        // 주문생성 후 삭제할 장바구니 id를 먼저 얻어놓기(등록하는 트랙잰션 범위안에 포함시키지 않으려고 미리 조회)
+        val cartRecord = transaction {
+            Cart.slice(c.id)
+                    .select { Cart.profileId eq authProfile.id }.singleOrNull()
+        }
+
+        val cartId = cartRecord?.get(c.id)
+
+        if (cartId == null) {
+            println("cartId is null. Check the cart table with authProfile : "
+                    + authProfile.id + "," + authProfile.userid)
+            return 0;
+        }
+
         var resultOrderId = 0L;
         transaction {
-
             try {
 
                 // 1. 주문을 생성하고 orderId 얻기
@@ -31,6 +50,11 @@ class OrderService(private val database: Database) {
 
                 // 3. 배송지 정보 등록
                 createOrderAddress(orderData, orderId)
+
+                // 4. cart, cart_item 정보 삭제
+                if (cartId != null) {
+                    deleteCart(cartId.toLong())
+                };
 
                 resultOrderId = orderId
             } catch (e: Exception) {
@@ -48,9 +72,9 @@ class OrderService(private val database: Database) {
     fun createOrder(req: OrderCreateRequest, authProfile: AuthProfile): Long {
         println("\n<<< OrderService createOrder >>>")
         println(
-            "request Data ==> " +
-                    ",paymentMethod:" + req.paymentMethod +
-                    ",orderStatus:" + req.orderStatus
+                "request Data ==> " +
+                        ",paymentMethod:" + req.paymentMethod +
+                        ",orderStatus:" + req.orderStatus
         )
 
         // Order.insert를 사용하여 주문 생성
@@ -85,10 +109,12 @@ class OrderService(private val database: Database) {
     fun createOrderAddress(req: OrderCreateRequest, orderId: Long): Long {
         println("\n<<< OrderService createOrderAddress >>>")
         println(
-            "request Data ==> " +
-                    ",postcode:" + req.orderAddress.postcode +
-                    ",address:" + req.orderAddress.address +
-                    ",detailAddress:" + req.orderAddress.detailAddress
+                "request Data ==> " +
+                        ",postcode:" + req.orderAddress.postcode +
+                        ",address:" + req.orderAddress.address +
+                        ",detailAddress:" + req.orderAddress.detailAddress +
+                        ",deliveryMemo:" + req.orderAddress.deliveryMemo
+
         )
 
         // OrderAddress.insert를 사용하여 주문 배송지 생성
@@ -97,12 +123,30 @@ class OrderService(private val database: Database) {
             it[OrderAddress.postcode] = req.orderAddress.postcode
             it[OrderAddress.address] = req.orderAddress.address
             it[OrderAddress.detailAddress] = req.orderAddress.detailAddress
+            it[OrderAddress.deliveryMemo] = req.orderAddress.deliveryMemo
             // 다른 주문 정보 필드들을 채워넣어야 할 수 있음
         } get OrderAddress.id
 
         println("response Data ==> orderId : " + orderAddressId);
 
         return orderAddressId // orderId를 반환
+    }
+
+    // 주문생성 후 장바구니 내역을 삭제한다.
+    fun deleteCart(cartId: Long) {
+        println("\n<<< OrderService deleteCart >>>")
+        println(
+                "request Data ==> " +
+                        ",cartId:" + cartId
+        )
+
+        // delete FROM cart_item where cart_id = ?
+        CartItem.deleteWhere { CartItem.cartId eq cartId }
+
+        // delete FROM cart where id = 1;
+        Cart.deleteWhere { Cart.id eq cartId }
+
+//        return
     }
 
 
