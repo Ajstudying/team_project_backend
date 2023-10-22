@@ -74,14 +74,17 @@ class OrderService(private val database: Database) {
         println(
                 "request Data ==> " +
                         ",paymentMethod:" + req.paymentMethod +
+                        ",paymentPrice:" + req.paymentPrice +
                         ",orderStatus:" + req.orderStatus
         )
 
         // Order.insert를 사용하여 주문 생성
         val orderId = Orders.insert {
             it[Orders.paymentMethod] = req.paymentMethod
+            it[Orders.paymentPrice] = req.paymentPrice
             it[Orders.orderStatus] = req.orderStatus
             it[Orders.orderDate] = LocalDateTime.now()
+            it[Orders.profileId] = authProfile.id
             // 다른 주문 정보 필드들을 채워넣어야 할 수 있음
         } get Orders.id
 

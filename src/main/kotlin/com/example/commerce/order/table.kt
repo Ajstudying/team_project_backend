@@ -1,5 +1,6 @@
 package com.example.commerce.order
 
+import com.example.commerce.auth.Profiles
 import jakarta.annotation.PostConstruct
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
@@ -25,6 +26,8 @@ object Orders : Table("orders") {
     // 주문상태 (1: 완료, 2:취소)
     val orderStatus = varchar("order_status", 1)
 
+    val profileId = reference("profile_id", Profiles)
+    
     // 주문 key
     override val primaryKey = PrimaryKey(Orders.id)
 }

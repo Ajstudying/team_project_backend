@@ -6,14 +6,23 @@ data class OrderRequest(
 
 data class OrderCreateRequest(
         val paymentMethod: String,       // 결제수단
+        val paymentPrice: Int,           // 결제금액
         val orderStatus: String,         // 주문상태 (1: 완료, 2:취소)
         val orderItems: MutableList<OrderItemRequest>,  // 주문 item 목록
         val orderAddress: OrderAddressRequest,   // 배송지
         val deliveryMemo: String?,   // 배송요청사항
 )
 
+data class OrderResponse(
+        val orderId: Long,        // 주문 id
+        val paymentMethod: String,       // 결제수단
+        val paymentPrice: Int,      // 결제금액
+        val orderStatus: String,         // 주문상태 (1: 완료, 2:취소)
+        val orderDate: String,
+)
+
 fun OrderCreateRequest.validate() =
-        !((this.paymentMethod.equals("")) || (this.orderStatus.equals("")))
+        !((this.paymentMethod.equals("")) || (this.paymentPrice <= 0) || (this.orderStatus.equals("")))
 
 
 data class OrderItemRequest(
