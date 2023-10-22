@@ -4,6 +4,7 @@ import com.example.commerce.auth.Auth
 import com.example.commerce.auth.AuthProfile
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.javatime.*
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.data.domain.Page
@@ -13,6 +14,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import java.sql.Connection
+import java.sql.Date
 
 //@Tag(name="주문 처리 API")
 @RestController
@@ -71,15 +73,21 @@ class OrderController(private val service: OrderService) {
 
     // 주문 목록 조회
     @Auth
-    @GetMapping("/list")
+    @GetMapping("/paging")
     fun paging(@RequestParam size: Int, @RequestParam page: Int,
                @RequestParam startDate: String, @RequestParam endDate: String,
-               authProfile: AuthProfile)
+               @RequestAttribute authProfile: AuthProfile)
             : Page<OrderResponse> = transaction(
             Connection.TRANSACTION_READ_UNCOMMITTED, readOnly = true
     ) {
-        // TRANSACTION_READ_UNCOMMITTED
-        // 트랜잭션이 커밋이 안 되어도 조회가 가능
+        println("<<< OrderController /order/list >>>")
+        println("입력 값 확인")
+        println(
+                "size:" + size +
+                        ",page:" + page +
+                        ",startDate:" + startDate +
+                        ",endDate:" + endDate
+        )
 
         val o = Orders // table alias
 
@@ -87,7 +95,8 @@ class OrderController(private val service: OrderService) {
                 .slice(o.id, o.paymentMethod, o.paymentPrice, o.orderStatus, o.orderDate)
                 .select {
                     (Orders.profileId eq authProfile.id) and
-                            (Orders.orderDate greaterEq startDate) and (Orders.orderDate lessEq endDate)
+                            (Date(Orders.orderDate) greaterEq Date.valueOf(startDate)) and
+                            (Date(Orders.orderDate) lessEq Date.valueOf(endDate))
                 }
 
         // 페이징 조회
