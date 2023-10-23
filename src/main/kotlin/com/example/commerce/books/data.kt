@@ -46,7 +46,7 @@ data class BookResponse (
     val categoryId: Int,
     val categoryName: String,
     val commentCount: Long,
-//    val bookComment : List<BookCommentResponse>
+    val bookComment : List<BookCommentResponse>
 )
 
 data class BookCommentResponse (
@@ -87,6 +87,8 @@ data class BookDataResponse (
     val cover: String,
     val categoryId: Int,
     val categoryName: String,
+    val customerReviewRank : Int,
+
 )
 
 data class SeriesInfoResponse (
@@ -128,6 +130,7 @@ data class BookBestResponse (
     val cover: String,
     val categoryId: Int,
     val categoryName: String,
+    val customerReviewRank : Int,
 )
 
 

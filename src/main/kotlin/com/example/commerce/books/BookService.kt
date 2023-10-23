@@ -35,29 +35,29 @@ class BookService {
     }
 
     //매핑 함수
-    fun mapToBookResponse(
-        table: BookTable, r: ResultRow, commentCountAlias: ExpressionAlias<Long>
-    ): BookResponse {
-        return BookResponse(
-            r[table.id].value,
-            r[table.publisher],
-            r[table.title],
-            r[table.link],
-            r[table.author],
-            r[table.pubDate],
-            r[table.description],
-            r[table.isbn],
-            r[table.isbn13],
-            r[table.itemId],
-            r[table.priceSales],
-            r[table.priceStandard],
-            r[table.stockStatus],
-            r[table.cover],
-            r[table.categoryId],
-            r[table.categoryName],
-            r[commentCountAlias]
-        )
-    }
+//    fun mapToBookResponse(
+//        table: BookTable, r: ResultRow, commentCountAlias: ExpressionAlias<Long>
+//    ): BookResponse {
+//        return BookResponse(
+//            r[table.id].value,
+//            r[table.publisher],
+//            r[table.title],
+//            r[table.link],
+//            r[table.author],
+//            r[table.pubDate],
+//            r[table.description],
+//            r[table.isbn],
+//            r[table.isbn13],
+//            r[table.itemId],
+//            r[table.priceSales],
+//            r[table.priceStandard],
+//            r[table.stockStatus],
+//            r[table.cover],
+//            r[table.categoryId],
+//            r[table.categoryName],
+//            r[commentCountAlias]
+//        )
+//    }
 
 
 }

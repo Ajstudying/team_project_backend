@@ -29,6 +29,7 @@ object Books : LongIdTable("books") {
     val categoryId = integer("category_id")
     val categoryName = varchar("category_name", 255)
     val customerReviewRank = integer("customer_review_rank")
+
 //    override val primaryKey = PrimaryKey(id)
 }
 

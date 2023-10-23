@@ -26,6 +26,7 @@ class NewBookApiController {
 
     @PostMapping
     fun postDataToMyServer(): ResponseEntity<Any> {
+        println("신간 db 입력")
 
         val dataFromExternalAPI: List<BookDataResponse> = newBooksClient.fetch().item
 
@@ -53,6 +54,7 @@ class NewBookApiController {
                         it[this.cover]=data.cover
                         it[this.categoryId] = data.categoryId
                         it[this.categoryName] = data.categoryName
+                        it[this.customerReviewRank] = data.customerReviewRank
 
                     }.resultedValues ?: return@transaction null
 

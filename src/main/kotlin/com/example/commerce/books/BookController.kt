@@ -36,9 +36,7 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
         //조인 및 특정 칼럼선택 count 함수 사용
         val slices =
 //            (b innerJoin c)
-            b.slice(
-                b.id, b.publisher, b.title, b.link, b.author, b.description,
-                b.itemId, b.priceSales, b.priceStandard, b.cover) //c.sales_amt
+            b.slice(b.columns) //c.sales_amt
 
         Books.selectAll()
 //            .orderBy(Cart.sales_amt to SortOrder.DESC)
@@ -46,7 +44,7 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
             r[Books.id].value, r[Books.publisher], r[Books.title], r[Books.link], r[Books.author], r[Books.pubDate],
             r[Books.description], r[Books.itemId], r[Books.priceSales],
             r[Books.priceStandard],  r[Books.stockStatus], r[Books.cover],
-            r[Books.categoryId], r[Books.categoryName],
+            r[Books.categoryId], r[Books.categoryName],r[Books.customerReviewRank],
         )}
         return@transaction PageImpl(listOf())
     }
@@ -64,7 +62,8 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
                 r -> BookDataResponse(
                     r[n.id].value, r[n.publisher], r[n.title], r[n.link], r[n.author], r[n.pubDate],
                     r[n.description], r[n.isbn], r[n.isbn13], r[n.itemId], r[n.priceSales],
-                    r[n.priceStandard], r[n.stockStatus], r[n.cover], r[n.categoryId], r[n.categoryName]
+                    r[n.priceStandard], r[n.stockStatus], r[n.cover], r[n.categoryId],
+                    r[n.categoryName], r[n.customerReviewRank],
                 )
             }
         val totalCount = Books.selectAll().count()
@@ -126,7 +125,8 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
                         r -> BookDataResponse(
                     r[n.id].value, r[n.publisher], r[n.title], r[n.link], r[n.author], r[n.pubDate],
                     r[n.description], r[n.isbn], r[n.isbn13],r[n.itemId], r[n.priceSales],
-                    r[n.priceStandard], r[n.stockStatus], r[n.cover], r[n.categoryId], r[n.categoryName],
+                    r[n.priceStandard], r[n.stockStatus], r[n.cover],
+                    r[n.categoryId], r[n.categoryName], r[n.customerReviewRank],
                 ) }
             return@transaction PageImpl(content, PageRequest.of(page, size), totalCount)
 
@@ -150,7 +150,8 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
                         r -> BookDataResponse(
                     r[b.id].value, r[b.publisher], r[b.title], r[b.link], r[b.author], r[b.pubDate],
                     r[b.description], r[b.isbn], r[b.isbn13],r[b.itemId], r[b.priceSales],
-                    r[b.priceStandard], r[b.stockStatus], r[b.cover], r[b.categoryId], r[b.categoryName],
+                    r[b.priceStandard], r[b.stockStatus], r[b.cover],
+                    r[b.categoryId], r[b.categoryName], r[b.customerReviewRank],
                 ) }
             return@transaction PageImpl(content, PageRequest.of(page, size), totalCount)
         }
@@ -185,10 +186,7 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
 
             option != null && keyword != null -> {
                 (b leftJoin c)
-                    .slice(b.id, b.publisher, b.title, b.link, b.author, b.pubDate,
-                        b.description, b.itemId, b.priceSales,
-                        b.priceStandard,b.stockStatus,b.cover,b.categoryId,b.categoryName,
-                        commentCount)
+                    .slice(b.columns + commentCount)
                     .select {
                         (Substring(b.categoryName, intLiteral(1), intLiteral(4)) like "$option%") and
                                 ((b.title like "%${keyword}%") or
@@ -201,18 +199,14 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
             option != null -> {
                 // 카테고리를 나누는 동작 처리
                 (b leftJoin c)
-                    .slice(b.id, b.publisher, b.title, b.link, b.author, b.pubDate, b.description,
-                    b.itemId, b.priceSales, b.priceStandard, b.stockStatus,
-                    b.cover, b.categoryId, b.categoryName, commentCount)
+                    .slice(b.columns + commentCount)
                     .select { Substring(b.categoryName, intLiteral(1), intLiteral(4)) like "$option%" }
                     .groupBy(b.id)
             }
             keyword != null -> {
                 // 옵션 검색 동작 처리
                 (b leftJoin c)
-                    .slice(b.id, b.publisher, b.title, b.link, b.author, b.pubDate, b.description,
-                        b.itemId, b.priceSales, b.priceStandard, b.stockStatus,
-                        b.cover, b.categoryId, b.categoryName, commentCount)
+                    .slice(b.columns + commentCount)
                     .select {
                     (b.title like "%${keyword}%") or
                             (b.categoryName like "%${keyword}%") or
@@ -243,25 +237,38 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
         println("도서상세페이지조회")
         val b = Books
         val c = BookComments
-        //집계 함수식의 별칭 설정
-        val commentCount = service.getComment();
+        val pf = Profiles
 
+//        val slices = (b leftJoin (c innerJoin pf))
+//                .slice(b.columns + c.id + commentCount + pf.id)
+        println("댓글찾기")
+            //댓글 찾기
+            val comments: List<BookCommentResponse> = transaction {
+                (c innerJoin pf)
+                        .select{(c.bookId eq id)}
+                        .mapNotNull { r -> BookCommentResponse (
+                            r[c.id].value, r[c.comment], r[pf.nickname]
+                    ) }
+        }
+        println("책찾기")
         val book = transaction {
-            (b leftJoin  c)
-                .slice(b.columns + commentCount)
-                .select { (Books.id eq id)}
-                .groupBy(b.id)  // groupBy 메소드로 그룹화할 기준 컬럼들을 지정
-                .mapNotNull { r -> BookResponse(
+            b.select { (b.id eq id)}
+                .mapNotNull { r ->
+                    //집계 함수식의 별칭 설정
+                    val commentCount = comments.size.toLong()
+                    BookResponse(
                 r[b.id].value, r[b.publisher], r[b.title], r[b.link], r[b.author], r[b.pubDate],
                 r[b.description], r[b.isbn], r[b.isbn13], r[b.itemId], r[b.priceSales],
-                r[b.priceStandard], r[b.stockStatus], r[b.cover], r[b.categoryId], r[b.categoryName], r[commentCount],
+                r[b.priceStandard], r[b.stockStatus], r[b.cover],
+                r[b.categoryId], r[b.categoryName], commentCount = commentCount, bookComment = comments
             ) }
             .singleOrNull() }
         return book?.let { ResponseEntity.ok(it) } ?:
         ResponseEntity.status(HttpStatus.NOT_FOUND).build()
     }
 
-    @GetMapping("/new/{id}")
+
+        @GetMapping("/new/{id}")
     fun selectNewBook(@PathVariable id: Long): ResponseEntity<BookResponse>{
         println("신간상세페이지조회")
         val n = NewBooks
@@ -270,26 +277,27 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
         //집계 함수식의 별칭 설정
         val commentCountAlias = c.id.count().alias("commentCount")
 
-        val slices =  (n leftJoin ( c innerJoin pf ))
-            .slice(n.columns + commentCountAlias + pf.identityId)
-
+        println("댓글찾기")
+        //댓글 찾기
         val comments: List<BookCommentResponse> = transaction {
-            slices
-                .select { (BookComments.newBookId eq id) }
-                .mapNotNull { r -> BookCommentResponse(
-                    r[c.id].value, r[c.comment], r[pf.nickname]
-                ) }
+            (c innerJoin pf)
+              .select{(c.bookId eq id)}
+              .mapNotNull { r -> BookCommentResponse (
+                  r[c.id].value, r[c.comment], r[pf.nickname]
+                  ) }
         }
 
         val book = transaction {
-            slices
-                .select { (NewBooks.id eq id) }
+            n.select { (NewBooks.id eq id) }
                 .groupBy(n.id)  // groupBy 메소드로 그룹화할 기준 컬럼들을 지정
-                .mapNotNull { r -> BookResponse(
+                .mapNotNull { r ->
+                    //집계 함수식의 별칭 설정
+                    val commentCount = comments.size.toLong()
+                    BookResponse(
                     r[n.id].value, r[n.publisher], r[n.title], r[n.link], r[n.author], r[n.pubDate],
                     r[n.description], r[n.isbn], r[n.isbn13], r[n.itemId], r[n.priceSales],
                     r[n.priceStandard], r[n.stockStatus], r[n.cover], r[n.categoryId], r[n.categoryName],
-                    r[commentCountAlias],
+                    commentCount= commentCount, bookComment = comments,
 //                    comments
                 ) }
                 .singleOrNull() }
