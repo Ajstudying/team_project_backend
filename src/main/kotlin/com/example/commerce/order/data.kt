@@ -22,6 +22,20 @@ data class OrderResponse(
     val orderItems: OrderItemResponse2, // 주문도서정보
 )
 
+data class OrderDeliveryResponse(
+    val orderId: Long,          // 주문 id
+    val paymentMethod: String,  // 결제수단
+    val paymentPrice: Int,      // 결제금액
+    val orderStatus: String,    // 주문상태 (1: 완료, 2:취소)
+    val orderDate: String,      // 주문일자
+    val deliveryName: String,   // 배송자명
+    val deliveryPhone: String,  // 배송자 핸드폰번호
+    val postcode: String,       // 우편번호
+    val address: String,        // 기본주소
+    val detailAddress: String,  // 상세주소
+    val deliveryMemo: String,   // 배송요청사항
+)
+
 fun OrderCreateRequest.validate() =
     !((this.paymentMethod.equals("")) || (this.paymentPrice <= 0) || (this.orderStatus.equals("")))
 

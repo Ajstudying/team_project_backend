@@ -3,11 +3,9 @@ package com.example.commerce.order
 import com.example.commerce.auth.Auth
 import com.example.commerce.auth.AuthProfile
 import com.example.commerce.books.Books
-import org.jetbrains.exposed.sql.JoinType
-import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.javatime.*
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
@@ -134,6 +132,52 @@ class OrderController(private val service: OrderService) {
                 totalCount // 전체 건수
             )
         }
+
+    // 주문/결제 상세 조회
+    @Auth
+    @GetMapping("/detail/{orderId}")
+    fun detail(
+        @PathVariable orderId: Long, @RequestAttribute authProfile: AuthProfile
+    ): List<OrderDeliveryResponse> = transaction {
+
+        println("<<< OrderController /order/list >>>")
+        println("입력 값 확인")
+        println("orderId:" + orderId)
+
+        val o = Orders          // 주문 table alias
+        val oa = OrderAddress   // 배송지 table alias
+
+        // 로그인 유저의 주문 상세 내역 select
+        val query =
+            (Orders innerJoin OrderAddress)
+                .slice(
+                    o.id, o.paymentMethod, o.paymentPrice, o.orderStatus, o.orderDate,
+                    oa.deliveryName, oa.deliveryPhone, oa.postcode, oa.address, oa.detailAddress, oa.deliveryMemo
+                )
+                .select { (Orders.profileId eq authProfile.id) and (Orders.id eq orderId) }
+
+        // 해당 주문건의 대표되는 도서 1개 조회를 위해 별도 function 처리함
+        val result = transaction {
+            query
+                .map { r ->
+                    OrderDeliveryResponse(
+                        r[o.id],
+                        r[o.paymentMethod],
+                        r[o.paymentPrice],
+                        r[o.orderStatus],
+                        r[o.orderDate].toString(),
+                        r[oa.deliveryName],
+                        r[oa.deliveryPhone],
+                        r[oa.postcode],
+                        r[oa.address],
+                        r[oa.detailAddress],
+                        r[oa.deliveryMemo],
+                    )
+                }
+        }
+
+        return@transaction result
+    }
 
     // 해당 주문건의 대표되는 도서 1개 조회를 위해 별도 function 처리함
     fun getBooksInfoForOrder(orderId: Long): OrderItemResponse2 {

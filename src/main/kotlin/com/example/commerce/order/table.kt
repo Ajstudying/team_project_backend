@@ -62,6 +62,12 @@ object OrderItem : Table("order_item") {
 object OrderAddress : Table("order_address") {
     val id = long("id").autoIncrement().uniqueIndex()
 
+    // 배송자명
+    val deliveryName = varchar("delivery_name", 50)
+
+    // 배송자 핸드폰번호
+    val deliveryPhone = varchar("delivery_phone", 20)
+
     // 우편번호
     val postcode = varchar("postcode", 6)
 
@@ -72,7 +78,7 @@ object OrderAddress : Table("order_address") {
     val detailAddress = varchar("detail_address", 100)
 
     // 배송요청사항
-    var deliveryMemo = varchar("delivery_memo", 500).nullable()
+    var deliveryMemo = varchar("delivery_memo", 500)
 
     // 주문번호
     var orderId = reference("order_id", Orders.id)
