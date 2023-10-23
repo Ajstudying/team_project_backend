@@ -1,6 +1,7 @@
 package com.example.commerce.order
 
 import com.example.commerce.auth.Profiles
+import com.example.commerce.books.Books
 import jakarta.annotation.PostConstruct
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
@@ -27,7 +28,7 @@ object Orders : Table("orders") {
     val orderStatus = varchar("order_status", 1)
 
     val profileId = reference("profile_id", Profiles)
-    
+
     // 주문 key
     override val primaryKey = PrimaryKey(Orders.id)
 }
@@ -49,6 +50,8 @@ object OrderItem : Table("order_item") {
     // 주문번호
     var orderId = reference("order_id", Orders.id)
 
+    // 도서정보와 Foreign key 설정
+//    val itemId = reference("item_id", Books.itemId)
 
     // 주문 item key
     override val primaryKey = PrimaryKey(OrderItem.id)
