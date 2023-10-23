@@ -46,13 +46,14 @@ data class BookResponse (
     val categoryId: Int,
     val categoryName: String,
     val commentCount: Long,
-//    val bookComment : List<BookCommentResponse>
+    val bookComment : List<BookCommentResponse>
 )
 
 data class BookCommentResponse (
     val id: Long,
     val comment: String,
     val nickname: String,
+    val createdDate: Long,
 )
 
 data class NewBookDataResponse (
@@ -87,6 +88,8 @@ data class BookDataResponse (
     val cover: String,
     val categoryId: Int,
     val categoryName: String,
+    val customerReviewRank : Int,
+
 )
 
 data class SeriesInfoResponse (
@@ -128,14 +131,15 @@ data class BookBestResponse (
     val cover: String,
     val categoryId: Int,
     val categoryName: String,
+    val customerReviewRank : Int,
 )
 
 
 
-data class CreateCommentRequest( val new: Int?, val comment: String)
+data class CreateCommentRequest( val new: Int?, val comment: String, val createdDate: Long )
 
 fun CreateCommentRequest.validate() : Boolean {
     return this.comment.isNotEmpty()
 }
 
-data class BookCommentModifyRequest(val comment: String)
+data class BookCommentModifyRequest( val new: Int?, val comment: String)

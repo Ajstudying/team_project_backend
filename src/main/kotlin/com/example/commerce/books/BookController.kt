@@ -4,6 +4,7 @@ import com.example.commerce.auth.Auth
 import com.example.commerce.auth.AuthProfile
 import com.example.commerce.auth.Profiles
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.beans.factory.annotation.Autowired
@@ -13,15 +14,18 @@ import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.sql.Connection
+import java.time.LocalDateTime
 
 @RestController
 @RequestMapping("books")
@@ -36,9 +40,7 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
         //조인 및 특정 칼럼선택 count 함수 사용
         val slices =
 //            (b innerJoin c)
-            b.slice(
-                b.id, b.publisher, b.title, b.link, b.author, b.description,
-                b.itemId, b.priceSales, b.priceStandard, b.cover) //c.sales_amt
+            b.slice(b.columns) //c.sales_amt
 
         Books.selectAll()
 //            .orderBy(Cart.sales_amt to SortOrder.DESC)
@@ -46,7 +48,7 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
             r[Books.id].value, r[Books.publisher], r[Books.title], r[Books.link], r[Books.author], r[Books.pubDate],
             r[Books.description], r[Books.itemId], r[Books.priceSales],
             r[Books.priceStandard],  r[Books.stockStatus], r[Books.cover],
-            r[Books.categoryId], r[Books.categoryName],
+            r[Books.categoryId], r[Books.categoryName],r[Books.customerReviewRank],
         )}
         return@transaction PageImpl(listOf())
     }
@@ -64,7 +66,8 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
                 r -> BookDataResponse(
                     r[n.id].value, r[n.publisher], r[n.title], r[n.link], r[n.author], r[n.pubDate],
                     r[n.description], r[n.isbn], r[n.isbn13], r[n.itemId], r[n.priceSales],
-                    r[n.priceStandard], r[n.stockStatus], r[n.cover], r[n.categoryId], r[n.categoryName]
+                    r[n.priceStandard], r[n.stockStatus], r[n.cover], r[n.categoryId],
+                    r[n.categoryName], r[n.customerReviewRank],
                 )
             }
         val totalCount = Books.selectAll().count()
@@ -126,7 +129,8 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
                         r -> BookDataResponse(
                     r[n.id].value, r[n.publisher], r[n.title], r[n.link], r[n.author], r[n.pubDate],
                     r[n.description], r[n.isbn], r[n.isbn13],r[n.itemId], r[n.priceSales],
-                    r[n.priceStandard], r[n.stockStatus], r[n.cover], r[n.categoryId], r[n.categoryName],
+                    r[n.priceStandard], r[n.stockStatus], r[n.cover],
+                    r[n.categoryId], r[n.categoryName], r[n.customerReviewRank],
                 ) }
             return@transaction PageImpl(content, PageRequest.of(page, size), totalCount)
 
@@ -150,7 +154,8 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
                         r -> BookDataResponse(
                     r[b.id].value, r[b.publisher], r[b.title], r[b.link], r[b.author], r[b.pubDate],
                     r[b.description], r[b.isbn], r[b.isbn13],r[b.itemId], r[b.priceSales],
-                    r[b.priceStandard], r[b.stockStatus], r[b.cover], r[b.categoryId], r[b.categoryName],
+                    r[b.priceStandard], r[b.stockStatus], r[b.cover],
+                    r[b.categoryId], r[b.categoryName], r[b.customerReviewRank],
                 ) }
             return@transaction PageImpl(content, PageRequest.of(page, size), totalCount)
         }
@@ -185,10 +190,7 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
 
             option != null && keyword != null -> {
                 (b leftJoin c)
-                    .slice(b.id, b.publisher, b.title, b.link, b.author, b.pubDate,
-                        b.description, b.itemId, b.priceSales,
-                        b.priceStandard,b.stockStatus,b.cover,b.categoryId,b.categoryName,
-                        commentCount)
+                    .slice(b.columns + commentCount)
                     .select {
                         (Substring(b.categoryName, intLiteral(1), intLiteral(4)) like "$option%") and
                                 ((b.title like "%${keyword}%") or
@@ -201,18 +203,14 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
             option != null -> {
                 // 카테고리를 나누는 동작 처리
                 (b leftJoin c)
-                    .slice(b.id, b.publisher, b.title, b.link, b.author, b.pubDate, b.description,
-                    b.itemId, b.priceSales, b.priceStandard, b.stockStatus,
-                    b.cover, b.categoryId, b.categoryName, commentCount)
+                    .slice(b.columns + commentCount)
                     .select { Substring(b.categoryName, intLiteral(1), intLiteral(4)) like "$option%" }
                     .groupBy(b.id)
             }
             keyword != null -> {
                 // 옵션 검색 동작 처리
                 (b leftJoin c)
-                    .slice(b.id, b.publisher, b.title, b.link, b.author, b.pubDate, b.description,
-                        b.itemId, b.priceSales, b.priceStandard, b.stockStatus,
-                        b.cover, b.categoryId, b.categoryName, commentCount)
+                    .slice(b.columns + commentCount)
                     .select {
                     (b.title like "%${keyword}%") or
                             (b.categoryName like "%${keyword}%") or
@@ -243,25 +241,38 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
         println("도서상세페이지조회")
         val b = Books
         val c = BookComments
-        //집계 함수식의 별칭 설정
-        val commentCount = service.getComment();
+        val pf = Profiles
 
+//        val slices = (b leftJoin (c innerJoin pf))
+//                .slice(b.columns + c.id + commentCount + pf.id)
+        println("댓글찾기")
+            //댓글 찾기
+            val comments: List<BookCommentResponse> = transaction {
+                (c innerJoin pf)
+                        .select{(c.bookId eq id)}
+                        .mapNotNull { r -> BookCommentResponse (
+                            r[c.id].value, r[c.comment], r[pf.nickname], r[c.createdDate],
+                    ) }
+        }
+        println("책찾기")
         val book = transaction {
-            (b leftJoin  c)
-                .slice(b.columns + commentCount)
-                .select { (Books.id eq id)}
-                .groupBy(b.id)  // groupBy 메소드로 그룹화할 기준 컬럼들을 지정
-                .mapNotNull { r -> BookResponse(
+            b.select { (b.id eq id)}
+                .mapNotNull { r ->
+                    //집계 함수식의 별칭 설정
+                    val commentCount = comments.size.toLong()
+                    BookResponse(
                 r[b.id].value, r[b.publisher], r[b.title], r[b.link], r[b.author], r[b.pubDate],
                 r[b.description], r[b.isbn], r[b.isbn13], r[b.itemId], r[b.priceSales],
-                r[b.priceStandard], r[b.stockStatus], r[b.cover], r[b.categoryId], r[b.categoryName], r[commentCount],
+                r[b.priceStandard], r[b.stockStatus], r[b.cover],
+                r[b.categoryId], r[b.categoryName], commentCount = commentCount, bookComment = comments
             ) }
             .singleOrNull() }
         return book?.let { ResponseEntity.ok(it) } ?:
         ResponseEntity.status(HttpStatus.NOT_FOUND).build()
     }
 
-    @GetMapping("/new/{id}")
+
+        @GetMapping("/new/{id}")
     fun selectNewBook(@PathVariable id: Long): ResponseEntity<BookResponse>{
         println("신간상세페이지조회")
         val n = NewBooks
@@ -270,26 +281,27 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
         //집계 함수식의 별칭 설정
         val commentCountAlias = c.id.count().alias("commentCount")
 
-        val slices =  (n leftJoin ( c innerJoin pf ))
-            .slice(n.columns + commentCountAlias + pf.identityId)
-
+        println("댓글찾기")
+        //댓글 찾기
         val comments: List<BookCommentResponse> = transaction {
-            slices
-                .select { (BookComments.newBookId eq id) }
-                .mapNotNull { r -> BookCommentResponse(
-                    r[c.id].value, r[c.comment], r[pf.nickname]
-                ) }
+            (c innerJoin pf)
+              .select{(c.bookId eq id)}
+              .mapNotNull { r -> BookCommentResponse (
+                  r[c.id].value, r[c.comment],r[pf.nickname], r[c.createdDate],
+                  ) }
         }
 
         val book = transaction {
-            slices
-                .select { (NewBooks.id eq id) }
+            n.select { (NewBooks.id eq id) }
                 .groupBy(n.id)  // groupBy 메소드로 그룹화할 기준 컬럼들을 지정
-                .mapNotNull { r -> BookResponse(
+                .mapNotNull { r ->
+                    //집계 함수식의 별칭 설정
+                    val commentCount = comments.size.toLong()
+                    BookResponse(
                     r[n.id].value, r[n.publisher], r[n.title], r[n.link], r[n.author], r[n.pubDate],
                     r[n.description], r[n.isbn], r[n.isbn13], r[n.itemId], r[n.priceSales],
                     r[n.priceStandard], r[n.stockStatus], r[n.cover], r[n.categoryId], r[n.categoryName],
-                    r[commentCountAlias],
+                    commentCount= commentCount, bookComment = comments,
 //                    comments
                 ) }
                 .singleOrNull() }
@@ -300,7 +312,10 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
 
     @Auth
     @PostMapping("/{id}")
-    fun createComment (@PathVariable id: Int, @RequestBody createCommentRequest: CreateCommentRequest, @RequestAttribute authProfile: AuthProfile)
+    fun createComment
+            (@PathVariable id: Long,
+             @RequestBody createCommentRequest: CreateCommentRequest,
+             @RequestAttribute authProfile: AuthProfile)
     : ResponseEntity<Any> {
         println("${createCommentRequest.new} 신간인가")
         println(createCommentRequest.comment)
@@ -313,10 +328,11 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
                 val response = BookComments.insert {
                     it[comment] = createCommentRequest.comment
                     it[profileId] = authProfile.id
+                    it[createdDate] = createCommentRequest.createdDate
                     if (createCommentRequest.new == 0) {
-                        it[newBookId] = id.toLong()
+                        it[newBookId] = id
                     } else {
-                        it[bookId] = id.toLong()
+                        it[bookId] = id
                     }
                 }.resultedValues
                     ?: return@transaction ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -327,6 +343,54 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
         }
 
         return ResponseEntity.status(HttpStatus.CREATED).build()
+    }
+
+    @Auth
+    @PutMapping("/{id}")
+    fun modifyComment
+            (@PathVariable id: Long,
+             @RequestBody request: BookCommentModifyRequest ,
+             @RequestAttribute authProfile: AuthProfile)
+    : ResponseEntity<Any> {
+        println("댓글 수정")
+
+        //객체값 널체크
+        if(request.comment.isNullOrEmpty()){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(mapOf("message" to "content are required"))
+        }
+        //댓글 찾기
+        transaction { BookComments.select { (BookComments.id eq id) and (BookComments.profileId eq authProfile.id) }.firstOrNull() }
+                ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
+
+        //댓글 수정
+        transaction {
+            BookComments.update( { BookComments.id eq id } ) {
+                if(!request.comment.isNullOrEmpty()){
+                    it[comment] = request.comment
+                }
+            }
+        }
+
+        return ResponseEntity.ok().build();
+    }
+
+    @Auth
+    @DeleteMapping("/{id}")
+    fun removeComment(@PathVariable id: Long,
+                      @RequestAttribute authProfile: AuthProfile): ResponseEntity<Any>{
+        //댓글 찾기
+        transaction {
+            BookComments
+                    .select (where = (BookComments.id eq id) and
+                            (BookComments.profileId eq authProfile.id)).firstOrNull() }
+                ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
+
+        //댓글 삭제
+        transaction {
+            BookComments.deleteWhere { BookComments.id eq id }
+        }
+        //200 OK
+        return ResponseEntity.ok().build()
     }
 
 
