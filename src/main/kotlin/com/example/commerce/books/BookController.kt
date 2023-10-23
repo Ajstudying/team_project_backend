@@ -4,6 +4,7 @@ import com.example.commerce.auth.Auth
 import com.example.commerce.auth.AuthProfile
 import com.example.commerce.auth.Profiles
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.beans.factory.annotation.Autowired
@@ -13,15 +14,18 @@ import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.sql.Connection
+import java.time.LocalDateTime
 
 @RestController
 @RequestMapping("books")
@@ -247,7 +251,7 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
                 (c innerJoin pf)
                         .select{(c.bookId eq id)}
                         .mapNotNull { r -> BookCommentResponse (
-                            r[c.id].value, r[c.comment], r[pf.nickname]
+                            r[c.id].value, r[c.comment], r[pf.nickname], r[c.createdDate],
                     ) }
         }
         println("책찾기")
@@ -283,7 +287,7 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
             (c innerJoin pf)
               .select{(c.bookId eq id)}
               .mapNotNull { r -> BookCommentResponse (
-                  r[c.id].value, r[c.comment], r[pf.nickname]
+                  r[c.id].value, r[c.comment],r[pf.nickname], r[c.createdDate],
                   ) }
         }
 
@@ -308,7 +312,10 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
 
     @Auth
     @PostMapping("/{id}")
-    fun createComment (@PathVariable id: Int, @RequestBody createCommentRequest: CreateCommentRequest, @RequestAttribute authProfile: AuthProfile)
+    fun createComment
+            (@PathVariable id: Long,
+             @RequestBody createCommentRequest: CreateCommentRequest,
+             @RequestAttribute authProfile: AuthProfile)
     : ResponseEntity<Any> {
         println("${createCommentRequest.new} 신간인가")
         println(createCommentRequest.comment)
@@ -321,10 +328,11 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
                 val response = BookComments.insert {
                     it[comment] = createCommentRequest.comment
                     it[profileId] = authProfile.id
+                    it[createdDate] = createCommentRequest.createdDate
                     if (createCommentRequest.new == 0) {
-                        it[newBookId] = id.toLong()
+                        it[newBookId] = id
                     } else {
-                        it[bookId] = id.toLong()
+                        it[bookId] = id
                     }
                 }.resultedValues
                     ?: return@transaction ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -335,6 +343,54 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
         }
 
         return ResponseEntity.status(HttpStatus.CREATED).build()
+    }
+
+    @Auth
+    @PutMapping("/{id}")
+    fun modifyComment
+            (@PathVariable id: Long,
+             @RequestBody request: BookCommentModifyRequest ,
+             @RequestAttribute authProfile: AuthProfile)
+    : ResponseEntity<Any> {
+        println("댓글 수정")
+
+        //객체값 널체크
+        if(request.comment.isNullOrEmpty()){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(mapOf("message" to "content are required"))
+        }
+        //댓글 찾기
+        transaction { BookComments.select { (BookComments.id eq id) and (BookComments.profileId eq authProfile.id) }.firstOrNull() }
+                ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
+
+        //댓글 수정
+        transaction {
+            BookComments.update( { BookComments.id eq id } ) {
+                if(!request.comment.isNullOrEmpty()){
+                    it[comment] = request.comment
+                }
+            }
+        }
+
+        return ResponseEntity.ok().build();
+    }
+
+    @Auth
+    @DeleteMapping("/{id}")
+    fun removeComment(@PathVariable id: Long,
+                      @RequestAttribute authProfile: AuthProfile): ResponseEntity<Any>{
+        //댓글 찾기
+        transaction {
+            BookComments
+                    .select (where = (BookComments.id eq id) and
+                            (BookComments.profileId eq authProfile.id)).firstOrNull() }
+                ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
+
+        //댓글 삭제
+        transaction {
+            BookComments.deleteWhere { BookComments.id eq id }
+        }
+        //200 OK
+        return ResponseEntity.ok().build()
     }
 
 

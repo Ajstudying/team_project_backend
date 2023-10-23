@@ -6,6 +6,7 @@ import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.Table
+import org.jetbrains.exposed.sql.javatime.datetime
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpStatus.Series
@@ -38,6 +39,7 @@ object BookComments : LongIdTable("book_comment") {
     val newBookId = reference("new_book_id", NewBooks.id).nullable()
     val bookId = reference("book_id", Books.id).nullable()
     val comment = text("comment")
+    val createdDate = long("created_date")
     val profileId = reference("profile_id", Profiles)
 }
 

@@ -53,6 +53,7 @@ data class BookCommentResponse (
     val id: Long,
     val comment: String,
     val nickname: String,
+    val createdDate: Long,
 )
 
 data class NewBookDataResponse (
@@ -135,10 +136,10 @@ data class BookBestResponse (
 
 
 
-data class CreateCommentRequest( val new: Int?, val comment: String)
+data class CreateCommentRequest( val new: Int?, val comment: String, val createdDate: Long )
 
 fun CreateCommentRequest.validate() : Boolean {
     return this.comment.isNotEmpty()
 }
 
-data class BookCommentModifyRequest(val comment: String)
+data class BookCommentModifyRequest( val new: Int?, val comment: String)
