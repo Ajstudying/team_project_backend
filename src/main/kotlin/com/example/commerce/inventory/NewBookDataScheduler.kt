@@ -24,9 +24,11 @@ class NewBookDataScheduler(
         try {
             // NewBooksClient를 사용하여 데이터를 가져옵니다.
             val dataFromExternalAPI: List<BookDataResponse> = newBooksClient.fetch().item
+            val foreignDataFromExternalAPI: List<BookDataResponse> = newBooksClient.foreignFetch().item
 
             // 가져온 데이터를 처리하고 데이터베이스에 삽입
             newBookApiController.postDataToMyServer()
+            newBookApiController.postForeignDataMyServer()
         }catch (e: Exception) {
             //에러메세지 확인
             logger.error(e.message)

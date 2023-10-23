@@ -60,6 +60,27 @@ object NewBooks : LongIdTable("new_books") {
     val customerReviewRank = integer("customer_review_rank")
 }
 
+object ForeignBooks : LongIdTable("foreign_books") {
+    val publisher = varchar("publisher",32)
+    val title = varchar("title", 255)
+    val link = varchar("link", 512)
+    val author = varchar("author", 512)
+    val pubDate = varchar("pub_date", 10)
+    val description = varchar("description", 512)
+    val isbn = varchar("isbn", 13)
+    val isbn13 = varchar("isbn13", 13)
+    val itemId = integer("item_id")
+    val priceSales = integer("price_sales")
+    val priceStandard = integer("price_standard")
+    val stockStatus = varchar("stock_status", 20)
+    val cover = varchar("cover", 512)
+    val categoryId = integer("category_id")
+    val categoryName = varchar("category_name", 255)
+    val customerReviewRank = integer("customer_review_rank")
+}
+
+
+
 
 //테이블 생성
 @Configuration
@@ -67,7 +88,7 @@ class BookTableSetUp(private val database: Database) {
     @PostConstruct
     fun migrateSchema() {
         transaction(database) {
-            SchemaUtils.createMissingTablesAndColumns(Books, BookComments, NewBooks)
+            SchemaUtils.createMissingTablesAndColumns(Books, BookComments, NewBooks, ForeignBooks)
         }
     }
 }
