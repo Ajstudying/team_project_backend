@@ -1,6 +1,7 @@
 package com.example.commerce.books
 
 import com.example.commerce.auth.Profiles
+import com.example.commerce.books.BookComments.nullable
 import jakarta.annotation.PostConstruct
 import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.Database
@@ -40,6 +41,14 @@ object BookComments : LongIdTable("book_comment") {
     val bookId = reference("book_id", Books.id).nullable()
     val comment = text("comment")
     val createdDate = long("created_date")
+    val profileId = reference("profile_id", Profiles)
+}
+
+//선호작품 테이블
+object LikeBooks : LongIdTable("like_books"){
+    val newBookId = reference("new_book_id", NewBooks.id).nullable()
+    val bookId = reference("book_id", Books.id).nullable()
+    val likes = bool("likes").default(false)
     val profileId = reference("profile_id", Profiles)
 }
 
@@ -90,7 +99,8 @@ class BookTableSetUp(private val database: Database) {
     @PostConstruct
     fun migrateSchema() {
         transaction(database) {
-            SchemaUtils.createMissingTablesAndColumns(Books, BookComments, NewBooks, ForeignBooks)
+            SchemaUtils.createMissingTablesAndColumns(
+                Books, BookComments, NewBooks, ForeignBooks, LikeBooks)
         }
     }
 }

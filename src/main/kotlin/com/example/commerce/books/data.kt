@@ -1,32 +1,5 @@
 package com.example.commerce.books
 
-import org.jetbrains.exposed.dao.id.EntityID
-
-interface SeriesInfo {
-    val seriesId: Int
-    val seriesLink: String
-    val seriesName: String
-}
-data class NewBookRequest(
-    val id: Long,
-    val publisher: String,
-    val title: String,
-    val link: String,
-    val author: String,
-    val pubDate: String,
-    val description: String,
-    val isbn: String,
-    val isbn13: String,
-    val itemId: Int,
-    val priceSales: Int,
-    val priceStandard: Int,
-    val stockStatus: String,
-    val cover: String,
-    val categoryId: Int,
-    val categoryName: String,
-    val seriesInfo: SeriesInfo,
-)
-
 
 data class BookResponse (
     val id: Long,
@@ -46,7 +19,8 @@ data class BookResponse (
     val categoryId: Int,
     val categoryName: String,
     val commentCount: Long,
-    val bookComment : List<BookCommentResponse>
+    val bookComment : List<BookCommentResponse>,
+    val likedBook: List<LikedBookResponse>,
 )
 
 data class BookCommentResponse (
@@ -106,6 +80,8 @@ data class BookListResponse (
     val author: String,
     val pubDate: String,
     val description: String,
+    val isbn: String,
+    val isbn13: String,
     val itemId: Int,
     val priceSales: Int,
     val priceStandard: Int,
@@ -113,7 +89,15 @@ data class BookListResponse (
     val cover: String,
     val categoryId: Int,
     val categoryName: String,
-    val commentCount: Long
+    val customerReviewRank : Int,
+    val commentCount: Long,
+//    val likeBooks: List<LikedBookResponse>
+)
+
+data class LikedBookResponse (
+    val id: Long,
+    val nickname: String,
+    val likes: Boolean,
 )
 
 data class BookBestResponse (
@@ -142,4 +126,6 @@ fun CreateCommentRequest.validate() : Boolean {
     return this.comment.isNotEmpty()
 }
 
-data class BookCommentModifyRequest( val new: Int?, val comment: String)
+data class BookCommentModifyRequest( val comment: String )
+
+data class CreateLikeRequest(val new: Int?, val like: Boolean)
