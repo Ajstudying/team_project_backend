@@ -9,16 +9,17 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
 @Configuration
 @EnableWebMvc
-class WebMvcConfig (val authInterceptor: AuthInterceptor): WebMvcConfigurer{
+class `WebMvcConfig-bk`(val authInterceptor: AuthInterceptor) : WebMvcConfigurer {
     override fun addCorsMappings(registry: CorsRegistry) {
         registry
-            .addMapping("/**")
-            .allowedOrigins(
-                "http://localhost:5500",
-                "http://127.0.0.1:5500",
-                "http://localhost:5000"
-            ).allowedMethods("*") // 모든 메서드 허용(GET, POST.....)
+                .addMapping("/**")
+                .allowedOrigins(
+                        "http://localhost:5500",
+                        "http://127.0.0.1:5500",
+                        "http://localhost:5000"
+                ).allowedMethods("*") // 모든 메서드 허용(GET, POST.....)
     }
+
     // 인증처리용 인터셉터를 추가
     override fun addInterceptors(registry: InterceptorRegistry) {
         registry.addInterceptor(authInterceptor)

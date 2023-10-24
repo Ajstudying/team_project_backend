@@ -1,13 +1,7 @@
 package com.example.commerce.cart
 
 import com.example.commerce.auth.Profiles
-import com.example.commerce.books.Books
-import com.example.commerce.books.Books.autoIncrement
-import com.example.commerce.books.Books.uniqueIndex
-import com.example.commerce.cart.Cart.autoIncrement
-import com.example.commerce.cart.Cart.uniqueIndex
 import jakarta.annotation.PostConstruct
-import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.Table
@@ -40,8 +34,6 @@ object CartItem : Table("cart_item") {
     val quantity = integer("quantity")
     val createDate = datetime("created_date")
 
-    // 장바구니 상태 (임시 필드)
-    val cartStatus = varchar("cart_status", 1)
     override val primaryKey = PrimaryKey(CartItem.id)
 }
 
