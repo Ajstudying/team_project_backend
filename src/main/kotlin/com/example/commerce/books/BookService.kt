@@ -55,7 +55,7 @@ class BookService {
         return comments
     }
     //신간 도서 상세 찾기
-    fun getNewBook(id: Long, comments:  List<BookCommentResponse>): BookResponse? {
+    fun getNewBook(id: Long, comments:  List<BookCommentResponse>, likes: List<LikedBookResponse>): BookResponse? {
         val n = NewBooks
 
         val newBook = transaction {
@@ -68,7 +68,7 @@ class BookService {
                         r[n.id].value, r[n.publisher], r[n.title], r[n.link], r[n.author], r[n.pubDate],
                         r[n.description], r[n.isbn], r[n.isbn13], r[n.itemId], r[n.priceSales],
                         r[n.priceStandard], r[n.stockStatus], r[n.cover], r[n.categoryId], r[n.categoryName],
-                        commentCount= commentCount, bookComment = comments,
+                        commentCount= commentCount, bookComment = comments, likedBook = likes,
                     ) }
                 .singleOrNull() }
 
@@ -85,37 +85,45 @@ class BookService {
     }
 
     //좋아요 추가/수정
-    fun updateLikeRecord (id: Long, profileId: Long, likes: Boolean, newBookId: Int?) {
-        val findLike = transaction {
-            LikeBooks
-                .select(where = (if (newBookId != null) LikeBooks.newBookId else LikeBooks.bookId) eq id and (LikeBooks.profileId eq profileId))
-                .firstOrNull()
-        }
+    fun updateLikeRecord (id: Long, profileId: Long, likes: Boolean, newBookId: Int?): ResponseEntity<Any> {
+        try {
+            // 좋아요가 이미 존재하는지 확인
+            val findLike = transaction {
+                val table = if (newBookId != null) LikeBooks.newBookId else LikeBooks.bookId
+                LikeBooks
+                    .select { (table eq id) and (LikeBooks.profileId eq profileId) }
+                    .firstOrNull()
+            }
 
-        if (findLike != null) {
-            transaction {
-                LikeBooks.update {
-                    it[LikeBooks.likes] = likes
-                    it[LikeBooks.profileId] = profileId
-                    if (newBookId != null) {
-                        it[LikeBooks.newBookId] = id
-                    } else {
-                        it[bookId] = id
+            // 좋아요가 이미 존재할 때
+            if (findLike != null) {
+                println("$likes 좋아요인가")
+                transaction {
+                    val table = if (newBookId != null) LikeBooks.newBookId else LikeBooks.bookId
+                    LikeBooks.update({ (table eq id) and (LikeBooks.profileId eq profileId) }) {
+                        it[LikeBooks.likes] = likes
+                    }
+                }
+            } else {
+                println("$likes 새로 생긴 좋아요인가")
+                transaction {
+                    LikeBooks.insert {
+                        it[LikeBooks.likes] = likes
+                        it[LikeBooks.profileId] = profileId
+                        if (newBookId != null) {
+                            it[LikeBooks.newBookId] = id
+                        } else {
+                            it[LikeBooks.bookId] = id
+                        }
                     }
                 }
             }
-        } else {
-            transaction {
-                LikeBooks.insert {
-                    it[LikeBooks.likes] = likes
-                    it[LikeBooks.profileId] = profileId
-                    if (newBookId != null) {
-                        it[LikeBooks.newBookId] = id
-                    } else {
-                        it[bookId] = id
-                    }
-                }
-            }
+
+            // 성공적으로 업데이트나 삽입을 마친 후 OK 응답 반환
+            return ResponseEntity.status(HttpStatus.OK).build()
+        } catch (e: Exception) {
+            // 예외가 발생한 경우 NOT_FOUND 응답 반환
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
         }
     }
 
