@@ -142,4 +142,6 @@ fun CreateCommentRequest.validate() : Boolean {
     return this.comment.isNotEmpty()
 }
 
-data class BookCommentModifyRequest( val new: Int?, val comment: String)
+data class BookCommentModifyRequest( val comment: String )
+
+data class CreateLikeRequest(val new: Int?, val like: Boolean)
