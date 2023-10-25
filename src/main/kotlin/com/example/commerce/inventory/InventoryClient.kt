@@ -1,5 +1,9 @@
 package com.example.commerce.inventory
 
+import com.example.commerce.books.BookDataResponse
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.web.bind.annotation.GetMapping
+
 //import org.springframework.web.bind.annotation.GetMapping
 //import org.springframework.web.bind.annotation.PathVariable
 //
@@ -9,3 +13,4 @@ package com.example.commerce.inventory
 //    @GetMapping("/{productId}")
 //    fun fetchProductStocks(@PathVariable productId: Int): Int?
 //}
+

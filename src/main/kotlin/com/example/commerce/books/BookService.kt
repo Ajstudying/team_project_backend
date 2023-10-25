@@ -1,16 +1,21 @@
 package com.example.commerce.books
 
 
-import com.example.commerce.auth.Identities.varchar
 import com.example.commerce.auth.Profiles
+import com.fasterxml.jackson.core.type.TypeReference
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.springframework.data.domain.Page
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
+import org.springframework.web.bind.annotation.GetMapping
 
 data class BookTable (
     val id: Column<EntityID<Long>>,
@@ -32,8 +37,52 @@ data class BookTable (
     val customerReviewRank : Column<Int>,
 )
 
+@FeignClient(name="books", url="http://192.168.100.36:8081/books")
+interface MyBooksClient {
+
+    @GetMapping("/book-list")
+    fun getBooksData() : List<BookDataResponse>
+}
 @Service
-class BookService {
+class BookService
+    (private val myBooksClient: MyBooksClient,
+     private val redisTemplate: RedisTemplate<String, String>)
+{
+
+    private val mapper = jacksonObjectMapper()
+    @Scheduled(cron = "0 0 0 1 * ?")
+    fun scheduledFetchBooksData() {
+        println("--- booksData fetching ---")
+        val items = myBooksClient.getBooksData()
+
+        //결과값 저장
+        redisTemplate.delete("book-list")
+
+        items.forEach{ data ->
+            // 책 데이터를 JSON 형태로 변환
+
+            val key = "book:${data.id}" // 각 도서에 대한 고유한 키 생성
+            val bookJson = mapper.writeValueAsString(data)
+            redisTemplate.opsForValue().set(key, bookJson) // 해당 키에 도서 정보 저장
+        }
+    }
+
+    fun getCachedBookList(): List<BookDataResponse> {
+
+        // 전체 데이터 키 목록 가져오기
+        val bookKeys = redisTemplate.keys("book:*")
+
+        val books: List<String>? = redisTemplate.opsForValue().multiGet(bookKeys)
+
+        if (!books.isNullOrEmpty()) {
+            val combinedJson = books.joinToString(",")
+            return mapper.readValue("[$combinedJson]", object : TypeReference<List<BookDataResponse>>() {})
+        } else {
+            return emptyList() // 데이터가 없는 경우 빈 리스트 반환
+        }
+    }
+
+
     //카운트별칭
     fun getComment(): ExpressionAlias<Long> {
         val c = BookComments

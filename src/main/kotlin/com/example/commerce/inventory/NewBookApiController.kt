@@ -36,8 +36,8 @@ class NewBookApiController {
         val result = transaction {
             // 가져온 데이터를 수정하고 데이터베이스에 삽입
             for (data in dataFromExternalAPI) {
-                // 이미 존재하는 isbn인지 확인
-                val existingBook = NewBooks.select { NewBooks.isbn eq data.isbn }.singleOrNull()
+                // 이미 존재하는 itemId인지 확인
+                val existingBook = NewBooks.select { NewBooks.itemId eq data.itemId }.singleOrNull()
 
                 if (existingBook == null) {
                     val newBook = NewBooks.insert {
