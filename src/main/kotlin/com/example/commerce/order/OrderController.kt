@@ -2,7 +2,11 @@ package com.example.commerce.order
 
 import com.example.commerce.auth.Auth
 import com.example.commerce.auth.AuthProfile
+import com.example.commerce.auth.Identities
 import com.example.commerce.books.Books
+import com.example.commerce.cart.Cart
+import com.example.commerce.cart.CartItem
+import com.example.commerce.cart.CartItemResponse
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.javatime.*
@@ -110,7 +114,7 @@ class OrderController(private val service: OrderService) {
                     .limit(size, offset = (size * page).toLong())
                     .map { r ->
                         val orderId = r[Orders.id]
-                        val booksInfo = getBooksInfoForOrder(orderId)
+                        val booksInfo = getBooksInfoForOrder(orderId, "one")
 
                         OrderResponse(
                             r[Orders.id],
@@ -118,7 +122,7 @@ class OrderController(private val service: OrderService) {
                             r[Orders.paymentPrice],
                             r[Orders.orderStatus],
                             r[Orders.orderDate].toString(),
-                            booksInfo
+                            booksInfo[0]
                         )
                     }
             }
@@ -133,33 +137,30 @@ class OrderController(private val service: OrderService) {
             )
         }
 
-    // 주문/결제 상세 조회
+    // 주문/배송내역 + 주문도서목록 조회
     @Auth
     @GetMapping("/detail/{orderId}")
     fun detail(
         @PathVariable orderId: Long, @RequestAttribute authProfile: AuthProfile
-    ): List<OrderDeliveryResponse> = transaction {
+    ): OrderDeliveryResponse = transaction(Connection.TRANSACTION_READ_UNCOMMITTED, readOnly = true) {
 
-        println("<<< OrderController /order/list >>>")
-        println("입력 값 확인")
-        println("orderId:" + orderId)
+        println("<<< OrderController /order/detail >>>")
+        println("입력 값 확인 => orderId:" + orderId)
 
-        val o = Orders          // 주문 table alias
+        val o = Orders // table alias
         val oa = OrderAddress   // 배송지 table alias
 
-        // 로그인 유저의 주문 상세 내역 select
-        val query =
+        // 로그인 유저의 주문/배송 내역 select
+        val result = transaction {
             (Orders innerJoin OrderAddress)
                 .slice(
                     o.id, o.paymentMethod, o.paymentPrice, o.orderStatus, o.orderDate,
                     oa.deliveryName, oa.deliveryPhone, oa.postcode, oa.address, oa.detailAddress, oa.deliveryMemo
                 )
                 .select { (Orders.profileId eq authProfile.id) and (Orders.id eq orderId) }
-
-        // 해당 주문건의 대표되는 도서 1개 조회를 위해 별도 function 처리함
-        val result = transaction {
-            query
-                .map { r ->
+                .first()
+                .let { r ->
+                    val booksInfo = getBooksInfoForOrder(orderId, "many")
                     OrderDeliveryResponse(
                         r[o.id],
                         r[o.paymentMethod],
@@ -172,6 +173,7 @@ class OrderController(private val service: OrderService) {
                         r[oa.address],
                         r[oa.detailAddress],
                         r[oa.deliveryMemo],
+                        booksInfo,
                     )
                 }
         }
@@ -180,24 +182,71 @@ class OrderController(private val service: OrderService) {
     }
 
     // 해당 주문건의 대표되는 도서 1개 조회를 위해 별도 function 처리함
-    fun getBooksInfoForOrder(orderId: Long): OrderItemResponse2 {
+    fun getBooksInfoForOrder(orderId: Long, gubun: String): List<OrderItemResponse2> {
         val booksInfo =
             (Books)
                 .join(OrderItem, JoinType.INNER, onColumn = OrderItem.itemId, otherColumn = Books.itemId)
-                .slice(Books.itemId, Books.title, Books.cover)
+                .slice(Books.itemId, OrderItem.orderPrice, OrderItem.quantity, Books.title, Books.cover)
                 .select { OrderItem.orderId eq orderId }
                 .map {
                     OrderItemResponse2(
                         orderId,
                         it[Books.itemId],
+                        it[OrderItem.orderPrice],
+                        it[OrderItem.quantity],
                         it[Books.title],
                         it[Books.cover]
                     )
                 }
-                .first() // 첫 번째 행 반환
+
+        if (gubun.equals("one")) {
+            booksInfo.first() // Return the first row
+        }
 
         // booksInfo 반환
         return booksInfo
     }
+
+    // 주문 도서 정보 조회
+    @Auth
+    @GetMapping("/books/{orderId}")
+    fun orderBooks(
+        @PathVariable orderId: Long, @RequestAttribute authProfile: AuthProfile
+    ): List<OrderItemResponse2> = transaction(Connection.TRANSACTION_READ_UNCOMMITTED, readOnly = true) {
+
+        println("<<< OrderController /order/list >>>")
+        println("입력 값 확인")
+        println("orderId:" + orderId)
+
+        // SQL
+//        select order_item.item_id, order_item.order_price, order_item.quantity,books.title, books.cover
+//        from order_item
+//        INNER JOIN orders ON orders.id = order_item.order_id
+//        INNER JOIN books ON books.item_id = order_item.item_id
+//        WHERE (orders.profile_id = :profileId) AND (orders.id = :orderId);
+        val result = transaction {
+            (Orders innerJoin OrderItem)
+                .join(Books, JoinType.INNER, onColumn = OrderItem.itemId, otherColumn = Books.itemId)
+                .slice(
+                    OrderItem.itemId, OrderItem.orderPrice, OrderItem.quantity,
+                    Books.title, Books.cover
+                )
+                .select { Orders.id eq OrderItem.orderId }
+                .andWhere { (Orders.profileId eq authProfile.id) and (Orders.id eq orderId) }
+                .map { row ->
+                    OrderItemResponse2(
+                        orderId = orderId,
+                        itemId = row[OrderItem.itemId],
+                        orderPrice = row[OrderItem.orderPrice],
+                        quantity = row[OrderItem.quantity],
+                        title = row[Books.title],
+                        cover = row[Books.cover]
+                    )
+                }
+        }
+
+        return@transaction result
+    }
+
 
 }

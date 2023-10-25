@@ -34,6 +34,7 @@ data class OrderDeliveryResponse(
     val address: String,        // 기본주소
     val detailAddress: String,  // 상세주소
     val deliveryMemo: String,   // 배송요청사항
+    val orderItems: List<OrderItemResponse2>,  // 주문도서정보
 )
 
 fun OrderCreateRequest.validate() =
@@ -63,6 +64,8 @@ data class OrderItemResponse(
 data class OrderItemResponse2(
     val orderId: Long,        // 주문 id
     val itemId: Int,        // book id
+    val orderPrice: Int,
+    val quantity: Int,
     val title: String,
     val cover: String,
 )
