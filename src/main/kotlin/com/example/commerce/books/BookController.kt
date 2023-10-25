@@ -104,9 +104,11 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
             val query = when {
                 option != null -> {
                     (n leftJoin c)
-                        .slice(n.columns + commentCount)
+                        .slice(n.columns + LikeBooks.columns + commentCount)
                         .select { Substring(NewBooks.categoryName, intLiteral(1), intLiteral(13)) like "$option%" }
                         .groupBy(n.id)
+
+
                 }else -> {
                     // 검색어가 없을시 전체 조회
                     NewBooks.selectAll()
@@ -119,11 +121,21 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
                 .orderBy(n.id to SortOrder.DESC)
                 .limit(size, offset = (size * page).toLong())
                 .map{
-                        r -> BookListResponse(
+                        r ->
+                    //선호작품 찾기
+                    val bookId = r[n.id].value
+                    val bookLikes = transaction {
+                        (n innerJoin LikeBooks)
+                            .select { LikeBooks.newBookId eq bookId}
+                            .mapNotNull { r -> LikedBookResponse(
+                                r[LikeBooks.id].value, r[LikeBooks.profileId].value, r[LikeBooks.likes]
+                            ) }
+                    }
+                    BookListResponse(
                     r[n.id].value, r[n.publisher], r[n.title], r[n.link], r[n.author], r[n.pubDate],
                     r[n.description], r[n.isbn], r[n.isbn13],r[n.itemId], r[n.priceSales],
                     r[n.priceStandard], r[n.stockStatus], r[n.cover],
-                    r[n.categoryId], r[n.categoryName], r[n.customerReviewRank],r[commentCount]
+                    r[n.categoryId], r[n.categoryName], r[n.customerReviewRank],r[commentCount], likeBooks = bookLikes,
                 ) }
             return@transaction PageImpl(content, PageRequest.of(page, size), totalCount)
 
@@ -153,11 +165,20 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
                 .orderBy(b.id to SortOrder.DESC)
                 .limit(size, offset = (size * page).toLong())
                 .map{
-                        r -> BookListResponse(
+                        r ->
+                    val bookId = r[b.id].value
+                    val bookLikes = transaction {
+                        (b innerJoin LikeBooks)
+                            .select { LikeBooks.bookId eq bookId }
+                            .mapNotNull { r -> LikedBookResponse(
+                                r[LikeBooks.id].value, r[LikeBooks.profileId].value, r[LikeBooks.likes]
+                            ) }
+                    }
+                    BookListResponse(
                     r[b.id].value, r[b.publisher], r[b.title], r[b.link], r[b.author], r[b.pubDate],
                     r[b.description], r[b.isbn], r[b.isbn13],r[b.itemId], r[b.priceSales],
                     r[b.priceStandard], r[b.stockStatus], r[b.cover],
-                    r[b.categoryId], r[b.categoryName], r[b.customerReviewRank],r[commentCount]
+                    r[b.categoryId], r[b.categoryName], r[b.customerReviewRank],r[commentCount], likeBooks = bookLikes,
                 ) }
             return@transaction PageImpl(content, PageRequest.of(page, size), totalCount)
         }
@@ -230,10 +251,22 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
             .orderBy(b.id to SortOrder.DESC)
             .limit(size, offset = (size * page).toLong())
             .map{
-                    r -> BookListResponse(
+                    r ->
+                //선호작품 찾기
+                val bookId = r[b.id].value
+                val bookLikes = transaction {
+                    (b innerJoin LikeBooks)
+                        .select { LikeBooks.bookId eq bookId }
+                        .mapNotNull { r -> LikedBookResponse(
+                            r[LikeBooks.id].value, r[LikeBooks.profileId].value, r[LikeBooks.likes]
+                        ) }
+                }
+                BookListResponse(
                 r[b.id].value, r[b.publisher], r[b.title], r[b.link], r[b.author], r[b.pubDate],
                 r[b.description],r[b.isbn], r[b.isbn13], r[b.itemId], r[b.priceSales],
-                r[b.priceStandard], r[b.stockStatus], r[b.cover], r[b.categoryId], r[b.categoryName],r[b.customerReviewRank],r[commentCount]
+                r[b.priceStandard], r[b.stockStatus], r[b.cover], r[b.categoryId],
+                r[b.categoryName],
+                r[b.customerReviewRank],r[commentCount], likeBooks = bookLikes,
             ) }
         return@transaction PageImpl(content, PageRequest.of(page, size), totalCount)
     }
@@ -260,8 +293,10 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
         }
         //선호작품 찾기
         val likes = transaction {
-            (LikeBooks innerJoin pf).select { LikeBooks.bookId eq id }.mapNotNull { r -> LikedBookResponse(
-                r[LikeBooks.id].value, r[pf.nickname],r[LikeBooks.likes]
+            (LikeBooks innerJoin pf)
+                .select { LikeBooks.bookId eq id }
+                .mapNotNull { r -> LikedBookResponse(
+                r[LikeBooks.id].value, r[pf.id].value, r[LikeBooks.likes]
             ) }
         }
         println("책찾기")
@@ -291,7 +326,7 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
         //선호작품 찾기
         val likes = transaction {
             (LikeBooks innerJoin Profiles).select { LikeBooks.newBookId eq id }.mapNotNull { r -> LikedBookResponse(
-                r[LikeBooks.id].value,r [Profiles.nickname], r[LikeBooks.likes],
+                r[LikeBooks.id].value,r [Profiles.id].value, r[LikeBooks.likes],
             ) }
         }
         val book = service.getNewBook(id, comments, likes)

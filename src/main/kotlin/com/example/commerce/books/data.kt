@@ -91,12 +91,12 @@ data class BookListResponse (
     val categoryName: String,
     val customerReviewRank : Int,
     val commentCount: Long,
-//    val likeBooks: List<LikedBookResponse>
+    val likeBooks: List<LikedBookResponse>
 )
 
 data class LikedBookResponse (
     val id: Long,
-    val nickname: String,
+    val profileId: Long,
     val likes: Boolean,
 )
 
