@@ -77,6 +77,7 @@ class OrderController(private val service: OrderService) {
     fun paging(
             @RequestParam size: Int, @RequestParam page: Int,
             @RequestParam startDate: String, @RequestParam endDate: String,
+            @RequestParam orderStatus: String,
             @RequestAttribute authProfile: AuthProfile
     ): Page<OrderResponse> =
             transaction(Connection.TRANSACTION_READ_UNCOMMITTED, readOnly = true) {
@@ -87,20 +88,34 @@ class OrderController(private val service: OrderService) {
                         "size:" + size +
                                 ",page:" + page +
                                 ",startDate:" + startDate +
-                                ",endDate:" + endDate
+                                ",endDate:" + endDate +
+                                ",orderStatus:[" + orderStatus + "]"
                 )
 
                 val o = Orders // table alias
 
                 // 로그인 유저의 주문내역 select
                 // 주문일자로 기간 조회
-                val query = Orders
+                var query = Orders
                         .slice(o.id, o.paymentMethod, o.paymentPrice, o.orderStatus, o.orderDate)
                         .select {
                             (Orders.profileId eq authProfile.id) and
                                     (Date(Orders.orderDate) greaterEq Date.valueOf(startDate)) and
                                     (Date(Orders.orderDate) lessEq Date.valueOf(endDate))
+
                         }
+
+                if ((orderStatus.equals("1")) || (orderStatus.equals("2"))) {
+                    println("주문상태에 따른 쿼리 처리....")
+                    query = Orders
+                            .slice(o.id, o.paymentMethod, o.paymentPrice, o.orderStatus, o.orderDate)
+                            .select {
+                                (Orders.profileId eq authProfile.id) and
+                                        (Date(Orders.orderDate) greaterEq Date.valueOf(startDate)) and
+                                        (Date(Orders.orderDate) lessEq Date.valueOf(endDate))
+                            }
+                            .andWhere { (Orders.orderStatus eq orderStatus) }
+                }
 
                 // 해당 주문건의 대표되는 도서 1개 조회를 위해 별도 function 처리함
                 val result = transaction {
@@ -205,11 +220,11 @@ class OrderController(private val service: OrderService) {
     // 주문 도서 정보 조회
     @Auth
     @GetMapping("/books/{orderId}")
-    fun getOrderBooks(
+    fun orderBooks(
             @PathVariable orderId: Long, @RequestAttribute authProfile: AuthProfile
     ): List<OrderItemResponse2> = transaction(Connection.TRANSACTION_READ_UNCOMMITTED, readOnly = true) {
 
-        println("<<< OrderController /order/list >>>")
+        println("<<< OrderController /order/books >>>")
         println("입력 값 확인")
         println("orderId:" + orderId)
 
@@ -243,5 +258,40 @@ class OrderController(private val service: OrderService) {
         return@transaction result
     }
 
+    // 주문 취소 처리
+    @Auth
+    @PutMapping("/detail/cancel/{orderId}")
+    fun modifyOrderStatus(
+            @PathVariable orderId: Long,
+            @RequestAttribute authProfile: AuthProfile
+    ): ResponseEntity<Any> {
+
+        println("<<< OrderController /order/detail/cancel >>>")
+        println("입력 값 확인")
+        println("orderId: " + orderId)
+
+        // 필요한 request 값이 빈값이면 400 : Bad request
+        if (orderId < 1) {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(mapOf("message" to "orderId are required"))
+        }
+
+        val o = Orders;
+
+        // id에 해당 레코드가 없으면 404
+        transaction {
+            o.select { (o.id eq orderId) }.firstOrNull()
+        } ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+
+        // 해당 주문건 상태값을 주문취소("2")로 업데이트 처리
+        transaction {
+            o.update({ o.id eq orderId }) {
+                it[orderStatus] = "2"
+            }
+        }
+
+        return ResponseEntity.ok().build();
+    }
 
 }
