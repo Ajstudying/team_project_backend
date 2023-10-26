@@ -15,6 +15,7 @@ data class AuthProfile(
 )
 
 data class AuthProfileExtends(
+    val profileId: Long,
     val nickname: String,
     val phone: String,
     val email: String,

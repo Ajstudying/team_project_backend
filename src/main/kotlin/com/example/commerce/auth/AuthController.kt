@@ -92,6 +92,7 @@ class AuthController(private val service: AuthService) {
             .singleOrNull()
             ?.let { r ->
                 AuthProfileExtends(
+                    r[p.id].value,
                     r[p.nickname],
                     r[p.phone],
                     r[p.email],
