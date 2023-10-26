@@ -214,7 +214,7 @@ class OrderController(private val service: OrderService) {
         @PathVariable orderId: Long, @RequestAttribute authProfile: AuthProfile
     ): List<OrderItemResponse2> = transaction(Connection.TRANSACTION_READ_UNCOMMITTED, readOnly = true) {
 
-        println("<<< OrderController /order/list >>>")
+        println("<<< OrderController /order/books >>>")
         println("입력 값 확인")
         println("orderId:" + orderId)
 
@@ -248,5 +248,40 @@ class OrderController(private val service: OrderService) {
         return@transaction result
     }
 
+    // 주문 취소 처리
+    @Auth
+    @PutMapping("/detail/cancel/{orderId}")
+    fun modifyOrderStatus(
+        @PathVariable orderId: Long,
+        @RequestAttribute authProfile: AuthProfile
+    ): ResponseEntity<Any> {
+
+        println("<<< OrderController /order/detail/cancel >>>")
+        println("입력 값 확인")
+        println("orderId: " + orderId)
+
+        // 필요한 request 값이 빈값이면 400 : Bad request
+        if (orderId < 1) {
+            return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(mapOf("message" to "orderId are required"))
+        }
+
+        val o = Orders;
+
+        // id에 해당 레코드가 없으면 404
+        transaction {
+            o.select { (o.id eq orderId) }.firstOrNull()
+        } ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+
+        // 해당 주문건 상태값을 주문취소("2")로 업데이트 처리
+        transaction {
+            o.update({ o.id eq orderId }) {
+                it[orderStatus] = "2"
+            }
+        }
+
+        return ResponseEntity.ok().build();
+    }
 
 }
