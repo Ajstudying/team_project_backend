@@ -82,6 +82,7 @@ class OrderController(private val service: OrderService) {
     fun paging(
         @RequestParam size: Int, @RequestParam page: Int,
         @RequestParam startDate: String, @RequestParam endDate: String,
+        @RequestParam orderStatus: String,
         @RequestAttribute authProfile: AuthProfile
     ): Page<OrderResponse> =
         transaction(Connection.TRANSACTION_READ_UNCOMMITTED, readOnly = true) {
@@ -92,20 +93,34 @@ class OrderController(private val service: OrderService) {
                 "size:" + size +
                         ",page:" + page +
                         ",startDate:" + startDate +
-                        ",endDate:" + endDate
+                        ",endDate:" + endDate +
+                        ",orderStatus:[" + orderStatus + "]"
             )
 
             val o = Orders // table alias
 
             // 로그인 유저의 주문내역 select
             // 주문일자로 기간 조회
-            val query = Orders
+            var query = Orders
                 .slice(o.id, o.paymentMethod, o.paymentPrice, o.orderStatus, o.orderDate)
                 .select {
                     (Orders.profileId eq authProfile.id) and
                             (Date(Orders.orderDate) greaterEq Date.valueOf(startDate)) and
                             (Date(Orders.orderDate) lessEq Date.valueOf(endDate))
+
                 }
+
+            if ((orderStatus.equals("1")) || (orderStatus.equals("2"))) {
+                println("주문상태에 따른 쿼리 처리....")
+                query = Orders
+                    .slice(o.id, o.paymentMethod, o.paymentPrice, o.orderStatus, o.orderDate)
+                    .select {
+                        (Orders.profileId eq authProfile.id) and
+                                (Date(Orders.orderDate) greaterEq Date.valueOf(startDate)) and
+                                (Date(Orders.orderDate) lessEq Date.valueOf(endDate))
+                    }
+                    .andWhere { (Orders.orderStatus eq orderStatus) }
+            }
 
             // 해당 주문건의 대표되는 도서 1개 조회를 위해 별도 function 처리함
             val result = transaction {
