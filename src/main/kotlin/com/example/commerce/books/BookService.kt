@@ -8,14 +8,20 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageImpl
+import org.springframework.data.domain.PageRequest
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RequestParam
+import java.sql.Connection
 
 data class BookTable (
     val id: Column<EntityID<Long>>,
@@ -41,46 +47,108 @@ data class BookTable (
 interface MyBooksClient {
 
     @GetMapping("/book-list")
-    fun getBooksData() : List<BookDataResponse>
+    fun getBooksData() : List<BookDataResponse>{
+        return transaction {
+            Books.selectAll()
+                .orderBy(Books.id to SortOrder.DESC)
+                .map { r ->
+                BookDataResponse(
+                    id = r[Books.id].value,
+                    publisher = r[Books.publisher],
+                    title = r[Books.title],
+                    link = r[Books.link],
+                    author = r[Books.author],
+                    pubDate = r[Books.pubDate],
+                    description = r[Books.description],
+                    isbn = r[Books.isbn],
+                    isbn13 = r[Books.isbn13],
+                    itemId = r[Books.itemId],
+                    priceSales = r[Books.priceSales],
+                    priceStandard = r[Books.priceStandard],
+                    stockStatus = r[Books.stockStatus],
+                    cover = r[Books.cover],
+                    categoryId = r[Books.categoryId],
+                    categoryName = r[Books.categoryName],
+                    customerReviewRank = r[Books.customerReviewRank],
+                )
+            }
+        }
+    }
+    //카테고리 검색
+    @GetMapping("/new-list")
+    fun searchNewCategory(@RequestParam keyword: String): List<BookDataResponse>
+
+
 }
 @Service
 class BookService
     (private val myBooksClient: MyBooksClient,
      private val redisTemplate: RedisTemplate<String, String>)
+//     private val redisTemplate: RedisTemplate<Long, String>)
 {
 
     private val mapper = jacksonObjectMapper()
-    @Scheduled(cron = "0 0 0 1 * ?")
+
+    @Scheduled(cron = "0 0 10 * * *")
+//    @Scheduled(cron = "0 0 0 1 * ?")
     fun scheduledFetchBooksData() {
         println("--- booksData fetching ---")
         val items = myBooksClient.getBooksData()
 
+    val keywords = arrayOf(
+        "소설/시/희곡", "사회과학", "에세이", "여행", "역사", "예술/대중문화", "어린이", "외국어",
+        "요리/살림", "유아", "인문학", "자기계발", "종교/역학",
+        "과학", "경제경영", "건강/취미", "만화",
+    )
+
+        keywords.forEach { keyword ->
+            redisTemplate.delete(keyword)
+            val category = myBooksClient.searchNewCategory(keyword) // 키워드에 해당하는 카테고리 이름을 가져오는 함수
+            println(category)
+            redisTemplate.opsForValue().set(keyword, mapper.writeValueAsString(category))
+        }
+
         //결과값 저장
         redisTemplate.delete("book-list")
+        redisTemplate.opsForValue().set("book-list", mapper.writeValueAsString(items))
 
-        items.forEach{ data ->
-            // 책 데이터를 JSON 형태로 변환
+//        items.forEach{ data ->
+//            // 책 데이터를 JSON 형태로 변환
+//
+//            val key = "book:${data.id}" // 각 도서에 대한 고유한 키 생성
+//            val bookJson = mapper.writeValueAsString(data)
+//            redisTemplate.opsForValue().set(key, bookJson) // 해당 키에 도서 정보 저장
+//        }
+    }
 
-            val key = "book:${data.id}" // 각 도서에 대한 고유한 키 생성
-            val bookJson = mapper.writeValueAsString(data)
-            redisTemplate.opsForValue().set(key, bookJson) // 해당 키에 도서 정보 저장
+    fun getNewCategory(option: String): List<BookDataResponse> {
+        val result = redisTemplate.opsForValue().get(option)
+        if(result != null) {
+            return mapper.readValue(result)
+        }else{
+            return listOf()
         }
     }
 
     fun getCachedBookList(): List<BookDataResponse> {
-
-        // 전체 데이터 키 목록 가져오기
-        val bookKeys = redisTemplate.keys("book:*")
-
-        val books: List<String>? = redisTemplate.opsForValue().multiGet(bookKeys)
-
-        if (!books.isNullOrEmpty()) {
-            val combinedJson = books.joinToString(",")
-            return mapper.readValue("[$combinedJson]", object : TypeReference<List<BookDataResponse>>() {})
-        } else {
-            return emptyList() // 데이터가 없는 경우 빈 리스트 반환
+        val result = redisTemplate.opsForValue().get("book-list")
+        if(result != null){
+            return mapper.readValue(result)
+        }else{
+            return listOf()
         }
+        // 전체 데이터 키 목록 가져오기
+//        val bookKeys = redisTemplate.keys("book:*")
+//        val books: List<String>? = redisTemplate.opsForValue().multiGet(bookKeys)
+//
+//        if (!books.isNullOrEmpty()) {
+//            val combinedJson = books.joinToString(",")
+//            return mapper.readValue("[$combinedJson]", object : TypeReference<List<BookDataResponse>>() {})
+//        } else {
+//            return emptyList() // 데이터가 없는 경우 빈 리스트 반환
+//        }
     }
+
 
 
     //카운트별칭
@@ -176,30 +244,6 @@ class BookService
         }
     }
 
-    //매핑 함수
-//    fun mapToBookResponse(
-//        table: BookTable, r: ResultRow, commentCountAlias: ExpressionAlias<Long>
-//    ): BookResponse {
-//        return BookResponse(
-//            r[table.id].value,
-//            r[table.publisher],
-//            r[table.title],
-//            r[table.link],
-//            r[table.author],
-//            r[table.pubDate],
-//            r[table.description],
-//            r[table.isbn],
-//            r[table.isbn13],
-//            r[table.itemId],
-//            r[table.priceSales],
-//            r[table.priceStandard],
-//            r[table.stockStatus],
-//            r[table.cover],
-//            r[table.categoryId],
-//            r[table.categoryName],
-//            r[commentCountAlias]
-//        )
-//    }
 
 
 }

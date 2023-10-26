@@ -12,8 +12,8 @@ import org.springframework.data.redis.core.RedisTemplate
 //    @Bean
 //    fun redisTemplate(
 //        redisConnectionFactory: RedisConnectionFactory
-//    ): RedisTemplate<String, String> {
-//        val template = RedisTemplate<String, String>()
+//    ): RedisTemplate<Long, String> {
+//        val template = RedisTemplate<Long, String>()
 //        template.connectionFactory = redisConnectionFactory
 //        return template
 //    }

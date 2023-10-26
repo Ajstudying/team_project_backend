@@ -19,8 +19,8 @@ class NewBookDataScheduler(
 
     //매주 월요일 0시 0분 0초에 실행
 //    @Scheduled(cron = "0 0 10 ? * MON")
-    //매일 아침 10시
-    @Scheduled(cron = "0 0 10 * * *")
+    //매일 아침 9시 50분
+    @Scheduled(cron = "0 50 9 * * *")
     fun fetchDataMonthly() {
         println("스케줄 실행")
         try {
