@@ -49,10 +49,13 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
     }
     @GetMapping("/best")
     fun pagingBest(@RequestParam size: Int, @RequestParam page: Int)
-    : Page<BookBestResponse> = transaction (Connection.TRANSACTION_READ_COMMITTED, readOnly = true){
+    : Page<BookListResponse> = transaction (Connection.TRANSACTION_READ_COMMITTED, readOnly = true){
         val b = Books
         val o = OrderItem
+        val c = BookComments
 
+        //집계 함수식의 별칭 설정
+        val commentCount = c.id.count().alias("commentCount")
 //        // 주문량 정보를 가져오기 위해 OrderItem 테이블을 조인하고 quantity를 가져옴
 //        val quantity =
 //            (b leftJoin o)
@@ -62,29 +65,27 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
 //                .orderBy(OrderItem.quantity.sum(), SortOrder.DESC)
 
 // Books 테이블과 OrderItem 테이블을 조인한 후 주문량 정보를 quantity 필드로 매핑
-        val books = b.join(OrderItem, JoinType.INNER, onColumn = o.itemId, otherColumn = b.itemId)
-            .slice(b.columns + o.columns)
+        val books = (b leftJoin c).join(OrderItem, JoinType.INNER, onColumn = o.itemId, otherColumn = b.itemId)
+            .slice(b.columns + o.columns + commentCount)
             .selectAll()
             .groupBy(b.itemId, o.itemId, b.id, o.id)
             .orderBy(o.quantity.sum(), SortOrder.DESC)
             .map { r ->
-                BookBestResponse(
-                    r[Books.id].value,
-                    r[Books.publisher],
-                    r[Books.title],
-                    r[Books.link],
-                    r[Books.author],
-                    r[Books.pubDate],
-                    r[Books.description],
-                    r[Books.itemId],
-                    r[Books.priceSales],
-                    r[Books.priceStandard],
-                    r[Books.stockStatus],
-                    r[Books.cover],
-                    r[Books.categoryId],
-                    r[Books.categoryName],
-                    r[Books.customerReviewRank],
-//                    r[o.quantity.sum()] ?: 0 // 주문량 정보를 가져와 quantity 필드에 매핑
+                //선호작품 찾기
+                val bookId = r[b.id].value
+                val bookLikes = transaction {
+                    (b innerJoin LikeBooks)
+                        .select { LikeBooks.bookId eq bookId }
+                        .mapNotNull { r -> LikedBookResponse(
+                            r[LikeBooks.id].value, r[LikeBooks.profileId].value, r[LikeBooks.likes]
+                        ) }
+                }
+                BookListResponse(
+                    r[b.id].value, r[b.publisher], r[b.title], r[b.link], r[b.author], r[b.pubDate],
+                    r[b.description],r[b.isbn], r[b.isbn13], r[b.itemId], r[b.priceSales],
+                    r[b.priceStandard], r[b.stockStatus], r[b.cover], r[b.categoryId],
+                    r[b.categoryName],
+                    r[b.customerReviewRank],r[commentCount], likedBook = bookLikes,
                 )
             }
 
@@ -290,7 +291,7 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
                     .slice(b.columns + commentCount)
                     .select {
                         (Substring(b.categoryName, intLiteral(1), intLiteral(4)) like "$option%") and
-                                ((b.title like "%${keyword}%") or
+                                ((b.title.trim() like "%${keyword}%") or
                                         (b.categoryName like "%${keyword}%") or
                                         (b.author like "%${keyword}%") or
                                         (b.publisher like "%${keyword}%")) }
@@ -309,11 +310,10 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
                 (b leftJoin c)
                     .slice(b.columns + commentCount)
                     .select {
-                    (b.title like "%${keyword}%") or
+                    (b.title.trim() like "%${keyword}%") or
                             (b.categoryName like "%${keyword}%") or
                             (b.author like "%${keyword}%") or
-                            (b.publisher like "%${keyword}%") or
-                            (b.title like "%${keyword}%") }
+                            (b.publisher like "%${keyword}%")}
                     .groupBy(b.id)
             }
             else -> {

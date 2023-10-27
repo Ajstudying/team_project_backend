@@ -37,6 +37,8 @@ class AuthService(private val database: Database) {
                     it[this.nickname] = req.nickname
                     it[this.email] = req.email
                     it[this.phone] = req.phone
+                    it[this.birth] = req.birth
+                    it[this.bookmark] = req.bookmark
                     it[this.identityId] = identityId.value
                 }
                 return@transaction profileId.value

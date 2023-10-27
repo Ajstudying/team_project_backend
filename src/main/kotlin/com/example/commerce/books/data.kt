@@ -100,26 +100,6 @@ data class LikedBookResponse (
     val likes: Boolean,
 )
 
-data class BookBestResponse (
-    val id: Long,
-    val publisher: String,
-    val title: String,
-    val link: String,
-    val author: String,
-    val pubDate: String,
-    val description: String,
-    val itemId: Int,
-    val priceSales: Int,
-    val priceStandard: Int,
-    val stockStatus: String,
-    val cover: String,
-    val categoryId: Int,
-    val categoryName: String,
-    val customerReviewRank : Int,
-//    val quantity: Int,
-)
-
-
 
 data class CreateCommentRequest( val new: Int?, val comment: String, val createdDate: Long )
 

@@ -6,6 +6,8 @@ data class SignupRequest(
     val nickname: String,
     val phone: String,
     val email: String,
+    val birth: String,
+    val bookmark: String,
 )
 
 data class AuthProfile(

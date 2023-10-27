@@ -212,7 +212,7 @@ class BookService
                     .firstOrNull()
             }
 
-            // 좋아요가 이미 존재할 때
+            //  좋아요를 취소할 때
             if (findLike != null) {
                 println("$likes 좋아요인가")
                 transaction {

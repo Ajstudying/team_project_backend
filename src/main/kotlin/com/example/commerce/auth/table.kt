@@ -17,6 +17,8 @@ object Profiles : LongIdTable("profile") {
     val nickname = varchar("nickname", 100)
     val phone = varchar("phone", 15)
     val identityId = reference("identity_id", Identities)
+    val birth = varchar("birth", 7)
+    val bookmark = varchar("bookmark", 15)
 }
 @Configuration
 class AuthTableSetup(private val database: Database) {
