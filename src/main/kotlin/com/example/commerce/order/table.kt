@@ -88,21 +88,23 @@ object OrderAddress : Table("order_address") {
 
 }
 
-// 주문 재고(도서별 판매량)
-object OrderStock : Table("order_stock") {
+// 주문 판매 정보(도서별 판매량)
+object OrderSales : Table("order_sales") {
     val id = long("id").autoIncrement().uniqueIndex()
 
-    // 도서 판매량
-    val bookStock = integer("book_stock")
+    // 도서별 판매수
+    val bookSales = integer("book_sales")
 
     // 도서 Item Id
     val itemId = integer("item_id")
+
+    val status = varchar("status", 1)
 
     // 도서 Id
     var bookId = reference("book_id", Books.id)
 
     // key
-    override val primaryKey = PrimaryKey(OrderStock.id)
+    override val primaryKey = PrimaryKey(OrderSales.id)
 }
 
 //테이블 생성
@@ -111,7 +113,7 @@ class OrderTableSetUp(private val database: Database) {
     @PostConstruct
     fun migrateSchema() {
         transaction(database) {
-            SchemaUtils.createMissingTablesAndColumns(Orders, OrderItem, OrderAddress, OrderStock)
+            SchemaUtils.createMissingTablesAndColumns(Orders, OrderItem, OrderAddress, OrderSales)
         }
     }
 }
