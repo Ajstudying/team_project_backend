@@ -116,7 +116,7 @@ data class BookBestResponse (
     val categoryId: Int,
     val categoryName: String,
     val customerReviewRank : Int,
-    val quantity: Int,
+//    val quantity: Int,
 )
 
 
