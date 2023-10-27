@@ -96,7 +96,7 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
 
     // 신간 조회
     @GetMapping("/new")
-    fun pagingNew(): List<BookDataResponse> = transaction (Connection.TRANSACTION_READ_COMMITTED, readOnly = true)
+    fun fetchNew(): List<BookDataResponse> = transaction (Connection.TRANSACTION_READ_COMMITTED, readOnly = true)
     {
         println("신간 조회")
         val n = NewBooks
@@ -109,6 +109,23 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
                     r[n.priceStandard], r[n.stockStatus], r[n.cover], r[n.categoryId],
                     r[n.categoryName], r[n.customerReviewRank],
                 )
+            }
+        return@transaction content
+    }
+    @GetMapping("foreign")
+    fun fetchForeign() : List<BookDataResponse> = transaction (Connection.TRANSACTION_READ_COMMITTED, readOnly = true)
+    {
+        println("외국도서 조회")
+        val f = ForeignBooks
+        val content = ForeignBooks.selectAll()
+            .orderBy(f.id to SortOrder.DESC)
+            .map{
+                    r -> BookDataResponse(
+                r[f.id].value, r[f.publisher], r[f.title], r[f.link], r[f.author], r[f.pubDate],
+                r[f.description], r[f.isbn], r[f.isbn13], r[f.itemId], r[f.priceSales],
+                r[f.priceStandard], r[f.stockStatus], r[f.cover], r[f.categoryId],
+                r[f.categoryName], r[f.customerReviewRank],
+            )
             }
         return@transaction content
     }

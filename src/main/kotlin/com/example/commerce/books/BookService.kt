@@ -74,6 +74,10 @@ interface MyBooksClient {
             }
         }
     }
+    @GetMapping("new")
+    fun newBooksFetch(): List<BookDataResponse>
+    @GetMapping("foreign")
+    fun newForeignFetch(): List<BookDataResponse>
     //카테고리 검색
     @GetMapping("/new-list")
     fun searchNewCategory(@RequestParam keyword: String): List<BookDataResponse>
@@ -107,7 +111,6 @@ class BookService
             println(category)
             redisTemplate.opsForValue().set(keyword, mapper.writeValueAsString(category))
         }
-
         //결과값 저장
         redisTemplate.delete("book-list")
         redisTemplate.opsForValue().set("book-list", mapper.writeValueAsString(items))
@@ -121,6 +124,23 @@ class BookService
 //        }
     }
 
+    //매주 월요일 실행
+//    @Scheduled(cron = "0 31 17 * * *")
+    @Scheduled(cron = "0 10 10 ? * MON")
+    fun scheduledNewBooks() {
+        println("신간도서 원래 도서목록에 추가 스케줄 실행")
+        //신간 도서 등록
+        setNewBooks(myBooksClient.newBooksFetch())
+    }
+
+//    @Scheduled(cron = "0 33 17 * * *")
+    @Scheduled(cron = "0 12 10 ? * MON")
+    fun scheduledForeignBooks() {
+        println("외국도서 원래 도서목록에 추가 스케줄 실행")
+        //신간 도서 등록
+        setForeignBooks(myBooksClient.newForeignFetch())
+    }
+
     fun getNewCategory(option: String): List<BookDataResponse> {
         val result = redisTemplate.opsForValue().get(option)
         if(result != null) {
@@ -128,6 +148,78 @@ class BookService
         }else{
             return listOf()
         }
+    }
+    fun setNewBooks(dataList:List<BookDataResponse>){
+        println("신간도서 원래 도서목록에 추가해요!!")
+        transaction {
+            // 가져온 데이터를 수정하고 데이터베이스에 삽입
+            for (data in dataList) {
+                // 이미 존재하는 itemId인지 확인
+                val existingBook = Books.select { Books.itemId eq data.itemId }.singleOrNull()
+
+                if (existingBook == null) {
+                    Books.insert {
+                        it[this.publisher] = data.publisher
+                        it[this.title] = data.title
+                        it[this.link] = data.link
+                        it[this.author] = data.author
+                        it[this.pubDate] = data.pubDate
+                        it[this.description] = data.description
+                        it[this.isbn] = data.isbn
+                        it[this.isbn13] = data.isbn13
+                        it[this.itemId] = data.itemId
+                        it[this.priceSales] = data.priceSales
+                        it[this.priceStandard] = data.priceStandard
+                        it[this.stockStatus] = data.stockStatus
+                        it[this.cover]=data.cover
+                        it[this.categoryId] = data.categoryId
+                        it[this.categoryName] = data.categoryName
+                        it[this.customerReviewRank] = data.customerReviewRank
+
+                    }.resultedValues ?: return@transaction null
+
+                }
+
+            }
+
+        }
+
+    }
+    fun setForeignBooks(dataList:List<BookDataResponse>){
+        println("외국도서 원래 도서목록에 추가해요!!")
+        transaction {
+            // 가져온 데이터를 수정하고 데이터베이스에 삽입
+            for (data in dataList) {
+                // 이미 존재하는 itemId인지 확인
+                val existingBook = Books.select { Books.itemId eq data.itemId }.singleOrNull()
+
+                if (existingBook == null) {
+                    Books.insert {
+                        it[this.publisher] = data.publisher
+                        it[this.title] = data.title
+                        it[this.link] = data.link
+                        it[this.author] = data.author
+                        it[this.pubDate] = data.pubDate
+                        it[this.description] = data.description
+                        it[this.isbn] = data.isbn
+                        it[this.isbn13] = data.isbn13
+                        it[this.itemId] = data.itemId
+                        it[this.priceSales] = data.priceSales
+                        it[this.priceStandard] = data.priceStandard
+                        it[this.stockStatus] = data.stockStatus
+                        it[this.cover]=data.cover
+                        it[this.categoryId] = data.categoryId
+                        it[this.categoryName] = data.categoryName
+                        it[this.customerReviewRank] = data.customerReviewRank
+
+                    }.resultedValues ?: return@transaction null
+
+                }
+
+            }
+
+        }
+
     }
 
     fun getCachedBookList(): List<BookDataResponse> {
