@@ -65,7 +65,10 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
 //                .orderBy(OrderItem.quantity.sum(), SortOrder.DESC)
 
 // Books 테이블과 OrderItem 테이블을 조인한 후 주문량 정보를 quantity 필드로 매핑
-        val books = (b leftJoin c).join(OrderItem, JoinType.INNER, onColumn = o.itemId, otherColumn = b.itemId)
+        val books =
+//                (b leftJoin c).join(OrderItem, JoinType.INNER, onColumn = o.itemId, otherColumn = b.itemId)
+                //order_item 테이블이 비어있으면 전체 조회하기 위해
+              (b leftJoin c).join(OrderItem, JoinType.LEFT, onColumn = o.itemId, otherColumn = b.itemId)
             .slice(b.columns + o.columns + commentCount)
             .selectAll()
             .groupBy(b.itemId, o.itemId, b.id, o.id)
@@ -190,7 +193,7 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
 //            val c = BookComments
 //
 //            //집계 함수식의 별칭 설정
-//            val commentCount = service.getComment()
+//            val commentCount = service.getCommentCount()
 //
 //            val query = when {
 //                option != null -> {
@@ -291,7 +294,7 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
         val c = BookComments
 
         //집계 함수식의 별칭 설정
-        val commentCount = service.getComment()
+        val commentCount = service.getCommentCount()
 
 //        val commonQuery = (b innerJoin c)
 //            .slice(b.id, b.publisher, b.title, b.link, b.author, b.pubDate,
@@ -371,17 +374,29 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
         val b = Books
         val c = BookComments
         val pf = Profiles
+        val r = ReplyComments
 
 //        val slices = (b leftJoin (c innerJoin pf))
 //                .slice(b.columns + c.id + commentCount + pf.id)
-        println("댓글찾기")
+
+        //답글 찾기
+        val reply : List<ReplyCommentResponse> = transaction {
+            (r innerJoin pf leftJoin c)
+                    .select{(r.bookId eq id) and (r.bookCommentId eq c.id)}
+                    .orderBy(r.id to SortOrder.DESC)
+                    .mapNotNull { row -> ReplyCommentResponse(
+                            row[r.id].value, row[r.comment], row[pf.nickname], row[r.createdDate]
+                    ) }
+        }
+        val slices = (c innerJoin pf leftJoin r)
+                .slice(c.columns + c.id + pf.id + pf.nickname + r.columns)
         //댓글 찾기
         val comments: List<BookCommentResponse> = transaction {
-            (c innerJoin pf)
+            slices
                 .select{(c.bookId eq id)}
                 .orderBy(c.id to SortOrder.DESC)
                 .mapNotNull { r -> BookCommentResponse (
-                    r[c.id].value, r[c.comment], r[pf.nickname], r[c.createdDate],
+                    r[c.id].value, r[c.comment], r[pf.nickname], r[c.createdDate], replyComment = reply
                     ) }
         }
         //선호작품 찾기
@@ -418,7 +433,9 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
 
         //선호작품 찾기
         val likes = transaction {
-            (LikeBooks innerJoin Profiles).select { LikeBooks.newBookId eq id }.mapNotNull { r -> LikedBookResponse(
+            (LikeBooks innerJoin Profiles)
+                    .select { LikeBooks.newBookId eq id }
+                    .mapNotNull { r -> LikedBookResponse(
                 r[LikeBooks.id].value,r [Profiles.id].value, r[LikeBooks.likes],
             ) }
         }
@@ -457,7 +474,9 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
                     ?: return@transaction ResponseEntity.status(HttpStatus.BAD_REQUEST)
 
                 val record = response.first()
-                return@transaction BookCommentResponse(record[BookComments.id].value ,record[BookComments.comment], authProfile.nickname, record[BookComments.createdDate])
+                return@transaction ReplyCommentResponse(
+                        record[BookComments.id].value ,record[BookComments.comment],
+                        authProfile.nickname, record[BookComments.createdDate])
             }
         } catch (e: Exception) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred.")
@@ -523,6 +542,72 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
         } else {
             service.updateLikeRecord(id, authProfile.id, request.like, null)
         }
+    }
+
+    //댓글에 답글
+    @Auth
+    @PostMapping("/reply/{pageId}/{commentId}")
+    fun createReplyComment
+            (@PathVariable pageId: Long, @PathVariable commentId: Long,
+             @RequestBody createCommentRequest: CreateCommentRequest,
+             @RequestAttribute authProfile: AuthProfile)
+            : ResponseEntity<Any> {
+        println("${createCommentRequest.new} 신간의 답글인가")
+        println(createCommentRequest.comment)
+
+        if(!createCommentRequest.validate()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
+        }
+
+        val (result, response) = transaction {
+            //원 댓글이 있는지 확인
+            val originalComment = BookComments.select{ BookComments.id eq commentId}.singleOrNull()
+                    ?: return@transaction Pair(false, null)
+
+            //있으면 답글 추가
+            val response = ReplyComments.insert {
+                it[comment] = createCommentRequest.comment
+                it[profileId] = authProfile.id
+                it[createdDate] = createCommentRequest.createdDate
+                if (createCommentRequest.new == 0) {
+                    it[newBookId] = pageId
+                } else {
+                    it[bookId] = pageId
+                }
+                it[bookCommentId] = commentId
+            }.resultedValues ?: return@transaction Pair(false, null)
+
+            val record = response.first()
+            return@transaction Pair(true, ReplyCommentResponse(record[ReplyComments.id].value,
+                    record[ReplyComments.comment], authProfile.nickname, record[ReplyComments.createdDate]))
+        }
+        if(result){
+            return ResponseEntity.status(HttpStatus.CREATED).body(response)
+        }else {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
+        }
+
+    }
+
+    //답글 삭제
+    @Auth
+    @DeleteMapping("{commentId}/{id}")
+    fun deleteReplyComment(@PathVariable commentId: Long, @PathVariable id: Long,
+                           @RequestAttribute authProfile: AuthProfile): ResponseEntity<Any>{
+
+        //댓글 찾기
+        val comment = transaction {
+            ReplyComments.select(where =
+            (ReplyComments.id eq id) and
+                    (ReplyComments.profileId eq authProfile.id) and
+                    (ReplyComments.bookCommentId eq commentId)).firstOrNull()
+        }?: return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
+        //댓글 삭제
+        transaction {
+            ReplyComments.deleteWhere { ReplyComments.id eq id }
+        }
+        //200 OK
+        return ResponseEntity.ok().build()
     }
 
 

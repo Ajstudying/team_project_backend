@@ -28,6 +28,13 @@ data class BookCommentResponse (
     val comment: String,
     val nickname: String,
     val createdDate: Long,
+    val replyComment: List<ReplyCommentResponse>
+)
+data class ReplyCommentResponse (
+    val id: Long,
+    val comment: String,
+    val nickname: String,
+    val createdDate: Long,
 )
 
 data class NewBookDataResponse (

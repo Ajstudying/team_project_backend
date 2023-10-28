@@ -244,7 +244,7 @@ class BookService
 
 
     //카운트별칭
-    fun getComment(): ExpressionAlias<Long> {
+    fun getCommentCount(): ExpressionAlias<Long> {
         val c = BookComments
         return c.id.count().alias("commentCount")
     }
@@ -252,14 +252,26 @@ class BookService
     //신간 도서 댓글 리스트 찾기
     fun getNewBooksComments(id: Long): List<BookCommentResponse> {
         val c = BookComments
-        val pf = Profiles;
-        val comments = transaction {
-            (c innerJoin pf)
-                .select{(c.newBookId eq id)}
-                .orderBy(c.id to SortOrder.DESC)
-                .mapNotNull { r -> BookCommentResponse (
-                    r[c.id].value, r[c.comment],r[pf.nickname], r[c.createdDate],
-                ) }
+        val pf = Profiles
+        val r = ReplyComments
+        //답글 찾기
+        val reply : List<ReplyCommentResponse> = transaction {
+            (r innerJoin pf)
+                    .select{(r.bookCommentId eq c.id)}
+                    .orderBy(r.id to SortOrder.DESC)
+                    .mapNotNull { row -> ReplyCommentResponse(
+                            row[r.id].value, row[r.comment], row[pf.nickname], row[r.createdDate]
+                    ) }
+        }
+        val slices = (c innerJoin pf leftJoin r).slice(c.columns + c.id + pf.id + r.columns)
+        //댓글 찾기
+        val comments: List<BookCommentResponse> = transaction {
+            slices
+                    .select{(c.newBookId eq id)}
+                    .orderBy(c.id to SortOrder.DESC)
+                    .mapNotNull { r -> BookCommentResponse (
+                            r[c.id].value, r[c.comment], r[pf.nickname], r[c.createdDate], replyComment = reply
+                    ) }
         }
         return comments
     }
