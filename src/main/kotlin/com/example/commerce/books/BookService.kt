@@ -260,7 +260,7 @@ class BookService
                     .select{(r.bookCommentId eq c.id)}
                     .orderBy(r.id to SortOrder.DESC)
                     .mapNotNull { row -> ReplyCommentResponse(
-                            row[r.id].value, row[r.comment], row[pf.nickname], row[r.createdDate]
+                            row[r.id].value, row[r.comment], row[pf.nickname], row[r.createdDate], row[c.id].value
                     ) }
         }
         val slices = (c innerJoin pf leftJoin r).slice(c.columns + c.id + pf.id + r.columns)

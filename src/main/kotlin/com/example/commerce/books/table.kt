@@ -36,7 +36,7 @@ object Books : LongIdTable("books") {
 }
 
 //댓글 테이블
-object BookComments : LongIdTable("book_comment") {
+object BookComments : LongIdTable("book_comments") {
     val newBookId = reference("new_book_id", NewBooks.id).nullable()
     val bookId = reference("book_id", Books.id).nullable()
     val comment = text("comment")
@@ -44,13 +44,13 @@ object BookComments : LongIdTable("book_comment") {
     val profileId = reference("profile_id", Profiles)
 }
 //답글의 테이블
-object ReplyComments : LongIdTable("reply_comment") {
+object ReplyComments : LongIdTable("reply_comments") {
     val newBookId = reference("new_book_id", NewBooks.id).nullable()
     val bookId = reference("book_id", Books.id).nullable()
     val comment = text("comment")
     val createdDate = long("created_date")
     val profileId = reference("profile_id", Profiles)
-    val bookCommentId = reference("book_comment_id", BookComments.id)
+    val bookCommentId = reference("book_comments_id", BookComments.id)
 }
 
 //선호작품 테이블

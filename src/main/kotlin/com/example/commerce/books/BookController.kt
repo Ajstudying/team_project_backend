@@ -370,7 +370,7 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
     //도서상세
     @GetMapping("/{id}")
     fun selectBook(@PathVariable id: Long): ResponseEntity<BookResponse>{
-        println("도서상세페이지조회")
+        println("pages open!!!")
         val b = Books
         val c = BookComments
         val pf = Profiles
@@ -381,22 +381,30 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
 
         //답글 찾기
         val reply : List<ReplyCommentResponse> = transaction {
-            (r innerJoin pf leftJoin c)
-                    .select{(r.bookId eq id) and (r.bookCommentId eq c.id)}
+            (r innerJoin c).join (pf, JoinType.LEFT, onColumn = pf.id, otherColumn = r.profileId)
+                    .select { (r.bookId eq id) and (r.bookCommentId eq c.id) }
                     .orderBy(r.id to SortOrder.DESC)
-                    .mapNotNull { row -> ReplyCommentResponse(
-                            row[r.id].value, row[r.comment], row[pf.nickname], row[r.createdDate]
-                    ) }
+                    .mapNotNull { row ->
+                        ReplyCommentResponse(
+                                row[r.id].value, row[r.comment], row[pf.nickname]
+                                , row[r.createdDate], row[c.id].value
+                        )
+                    }
         }
-        val slices = (c innerJoin pf leftJoin r)
-                .slice(c.columns + c.id + pf.id + pf.nickname + r.columns)
+        println(reply+"replyComments ------------------")
         //댓글 찾기
         val comments: List<BookCommentResponse> = transaction {
-            slices
-                .select{(c.bookId eq id)}
+            (c innerJoin pf leftJoin r)
+                .slice(c.columns + c.id + pf.id + pf.nickname + r.columns)
+                .select{ (c.bookId eq id) }
                 .orderBy(c.id to SortOrder.DESC)
-                .mapNotNull { r -> BookCommentResponse (
-                    r[c.id].value, r[c.comment], r[pf.nickname], r[c.createdDate], replyComment = reply
+                .mapNotNull { r ->
+                    val commentReplies = reply.filter { replyComment ->
+                        replyComment.parentId == r[c.id].value
+                    }
+                    BookCommentResponse (
+                    r[c.id].value, r[c.comment], r[pf.nickname],
+                        r[c.createdDate], replyComment = commentReplies
                     ) }
         }
         //선호작품 찾기
@@ -474,7 +482,7 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
                     ?: return@transaction ResponseEntity.status(HttpStatus.BAD_REQUEST)
 
                 val record = response.first()
-                return@transaction ReplyCommentResponse(
+                return@transaction SaveBookCommentResponse(
                         record[BookComments.id].value ,record[BookComments.comment],
                         authProfile.nickname, record[BookComments.createdDate])
             }
@@ -579,7 +587,9 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
 
             val record = response.first()
             return@transaction Pair(true, ReplyCommentResponse(record[ReplyComments.id].value,
-                    record[ReplyComments.comment], authProfile.nickname, record[ReplyComments.createdDate]))
+                    record[ReplyComments.comment],
+                    authProfile.nickname,
+                    record[ReplyComments.createdDate], record[ReplyComments.bookCommentId].value))
         }
         if(result){
             return ResponseEntity.status(HttpStatus.CREATED).body(response)
@@ -591,7 +601,7 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
 
     //답글 삭제
     @Auth
-    @DeleteMapping("{commentId}/{id}")
+    @DeleteMapping("/reply/{commentId}/{id}")
     fun deleteReplyComment(@PathVariable commentId: Long, @PathVariable id: Long,
                            @RequestAttribute authProfile: AuthProfile): ResponseEntity<Any>{
 
