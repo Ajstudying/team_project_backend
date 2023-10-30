@@ -4,6 +4,7 @@ import com.example.commerce.auth.AuthProfile
 import com.example.commerce.books.Books
 import com.example.commerce.cart.Cart
 import com.example.commerce.cart.CartItem
+import com.example.commerce.sales.OrderSalesService
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.plus
@@ -61,8 +62,11 @@ class OrderService(private val database: Database) {
                     deleteCart(cartId.toLong())
                 };
 
-                // 5. 주문 재고 업데이트
+                // 5. 주문 판매데이터 업데이트
                 updateOrderSales(resultOrderItems)
+
+                // 6. 주문 데이터 관리시스템으로 Message 전송(RabbitMQ 이용)
+//                OrderSalesService.sendOrder()
 
                 resultOrderId = orderId
             } catch (e: Exception) {
@@ -75,6 +79,7 @@ class OrderService(private val database: Database) {
         }
         return resultOrderId
     }
+
 
     // 주문을 생성하고 orderId 반환
     fun createOrder(req: OrderCreateRequest, authProfile: AuthProfile): Long {
