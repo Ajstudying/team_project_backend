@@ -73,7 +73,8 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
             .selectAll()
             .groupBy(b.itemId, o.itemId, b.id, o.id)
             .orderBy(o.quantity.sum(), SortOrder.DESC)
-            .map { r ->
+            //상위 10개 작품으로 제한
+            .limit(10).map { r ->
                 //선호작품 찾기
                 val bookId = r[b.id].value
                 val bookLikes = transaction {
@@ -369,85 +370,24 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
 
     //도서상세
     @GetMapping("/{id}")
-    fun selectBook(@PathVariable id: Long): ResponseEntity<BookResponse>{
+    fun selectBook
+                (@PathVariable id: Long, @RequestAttribute authProfile: AuthProfile?)
+    : ResponseEntity<BookResponse>{
         println("pages open!!!")
-        val b = Books
-        val c = BookComments
-        val pf = Profiles
-        val r = ReplyComments
+        val book = service.getBooks(id, authProfile)
 
-//        val slices = (b leftJoin (c innerJoin pf))
-//                .slice(b.columns + c.id + commentCount + pf.id)
-
-        //답글 찾기
-        val reply : List<ReplyCommentResponse> = transaction {
-            (r innerJoin c).join (pf, JoinType.LEFT, onColumn = pf.id, otherColumn = r.profileId)
-                    .select { (r.bookId eq id) and (r.bookCommentId eq c.id) }
-                    .orderBy(r.id to SortOrder.DESC)
-                    .mapNotNull { row ->
-                        ReplyCommentResponse(
-                                row[r.id].value, row[r.comment], row[pf.nickname]
-                                , row[r.createdDate], row[c.id].value
-                        )
-                    }
-        }
-        println(reply+"replyComments ------------------")
-        //댓글 찾기
-        val comments: List<BookCommentResponse> = transaction {
-            (c innerJoin pf leftJoin r)
-                .slice(c.columns + c.id + pf.id + pf.nickname + r.columns)
-                .select{ (c.bookId eq id) }
-                .orderBy(c.id to SortOrder.DESC)
-                .mapNotNull { r ->
-                    val commentReplies = reply.filter { replyComment ->
-                        replyComment.parentId == r[c.id].value
-                    }
-                    BookCommentResponse (
-                    r[c.id].value, r[c.comment], r[pf.nickname],
-                        r[c.createdDate], replyComment = commentReplies
-                    ) }
-        }
-        //선호작품 찾기
-        val likes = transaction {
-            (LikeBooks innerJoin pf)
-                .select { LikeBooks.bookId eq id }
-                .mapNotNull { r -> LikedBookResponse(
-                r[LikeBooks.id].value, r[pf.id].value, r[LikeBooks.likes]
-            ) }
-        }
-        println("책찾기")
-        val book = transaction {
-            b.select { (b.id eq id)}
-                .mapNotNull { r ->
-                    //집계 함수식의 별칭 설정
-                    val commentCount = comments.size.toLong()
-                    BookResponse(
-                r[b.id].value, r[b.publisher], r[b.title], r[b.link], r[b.author], r[b.pubDate],
-                r[b.description], r[b.isbn], r[b.isbn13], r[b.itemId], r[b.priceSales],
-                r[b.priceStandard], r[b.stockStatus], r[b.cover],
-                r[b.categoryId], r[b.categoryName], commentCount = commentCount,
-                        bookComment = comments, likedBook = likes
-            ) }
-            .singleOrNull() }
         return book?.let { ResponseEntity.ok(it) } ?:
         ResponseEntity.status(HttpStatus.NOT_FOUND).build()
     }
 
     //신간도서상세
     @GetMapping("/new/{id}")
-    fun selectNewBook(@PathVariable id: Long): ResponseEntity<BookResponse>{
+    fun selectNewBook(
+        @PathVariable id: Long, @RequestAttribute authProfile: AuthProfile?)
+    : ResponseEntity<BookResponse>{
         println("신간상세페이지조회")
-        val comments: List<BookCommentResponse> = service.getNewBooksComments(id)
 
-        //선호작품 찾기
-        val likes = transaction {
-            (LikeBooks innerJoin Profiles)
-                    .select { LikeBooks.newBookId eq id }
-                    .mapNotNull { r -> LikedBookResponse(
-                r[LikeBooks.id].value,r [Profiles.id].value, r[LikeBooks.likes],
-            ) }
-        }
-        val book = service.getNewBook(id, comments, likes)
+        val book = service.getNewBook(id, authProfile)
 
         return book?.let { ResponseEntity.ok(it) } ?:
         ResponseEntity.status(HttpStatus.NOT_FOUND).build()
