@@ -1,7 +1,9 @@
 package com.example.commerce.books
 
 
+import com.example.commerce.auth.AuthProfile
 import com.example.commerce.auth.Profiles
+import com.example.commerce.inventory.HitsTable
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -10,6 +12,7 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.springframework.amqp.rabbit.core.RabbitTemplate
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
@@ -42,6 +45,7 @@ data class BookTable (
     val categoryName: Column<String>,
     val customerReviewRank : Column<Int>,
 )
+
 
 @FeignClient(name="books", url="http://192.168.100.36:8081/books")
 interface MyBooksClient {
@@ -87,6 +91,7 @@ interface MyBooksClient {
 @Service
 class BookService
     (private val myBooksClient: MyBooksClient,
+     private val rabbitTemplate: RabbitTemplate,
      private val redisTemplate: RedisTemplate<String, String>)
 //     private val redisTemplate: RedisTemplate<Long, String>)
 {
@@ -241,43 +246,56 @@ class BookService
 //        }
     }
 
-
-
     //카운트별칭
     fun getCommentCount(): ExpressionAlias<Long> {
         val c = BookComments
         return c.id.count().alias("commentCount")
     }
 
-    //신간 도서 댓글 리스트 찾기
-    fun getNewBooksComments(id: Long): List<BookCommentResponse> {
+    //신간 도서 상세 찾기
+    fun getNewBook(id: Long, authProfile: AuthProfile?): BookResponse? {
+        val n = NewBooks
         val c = BookComments
         val pf = Profiles
         val r = ReplyComments
+
         //답글 찾기
         val reply : List<ReplyCommentResponse> = transaction {
-            (r innerJoin pf)
-                    .select{(r.bookCommentId eq c.id)}
-                    .orderBy(r.id to SortOrder.DESC)
-                    .mapNotNull { row -> ReplyCommentResponse(
-                            row[r.id].value, row[r.comment], row[pf.nickname], row[r.createdDate], row[c.id].value
-                    ) }
+            (r innerJoin c).join (pf, JoinType.LEFT, onColumn = pf.id, otherColumn = r.profileId)
+                .select { (r.bookId eq id) and (r.bookCommentId eq c.id) }
+                .orderBy(r.id to SortOrder.DESC)
+                .mapNotNull { row ->
+                    ReplyCommentResponse(
+                        row[r.id].value, row[r.comment], row[pf.nickname]
+                        , row[r.createdDate], row[c.id].value
+                    )
+                }
         }
-        val slices = (c innerJoin pf leftJoin r).slice(c.columns + c.id + pf.id + r.columns)
+        println(reply+"신간 replyComments ------------------")
+
         //댓글 찾기
         val comments: List<BookCommentResponse> = transaction {
-            slices
-                    .select{(c.newBookId eq id)}
-                    .orderBy(c.id to SortOrder.DESC)
-                    .mapNotNull { r -> BookCommentResponse (
-                            r[c.id].value, r[c.comment], r[pf.nickname], r[c.createdDate], replyComment = reply
+            (c innerJoin pf leftJoin r)
+                .slice(c.columns + c.id + pf.id + pf.nickname + r.columns)
+                .select{(c.newBookId eq id)}
+                .orderBy(c.id to SortOrder.DESC)
+                .mapNotNull { r ->
+                    val commentReplies = reply.filter { replyComment ->
+                        replyComment.parentId == r[c.id].value
+                    }
+                    BookCommentResponse (
+                        r[c.id].value, r[c.comment], r[pf.nickname],
+                        r[c.createdDate], replyComment = commentReplies
                     ) }
         }
-        return comments
-    }
-    //신간 도서 상세 찾기
-    fun getNewBook(id: Long, comments:  List<BookCommentResponse>, likes: List<LikedBookResponse>): BookResponse? {
-        val n = NewBooks
+        //선호작품 찾기
+        val likes = transaction {
+            (LikeBooks innerJoin Profiles)
+                .select { LikeBooks.newBookId eq id }
+                .mapNotNull { r -> LikedBookResponse(
+                    r[LikeBooks.id].value,r [Profiles.id].value, r[LikeBooks.likes],
+                ) }
+        }
 
         val newBook = transaction {
             n.select { (NewBooks.id eq id) }
@@ -293,10 +311,114 @@ class BookService
                     ) }
                 .singleOrNull() }
 
+        //조회수 테이블 만들기
+        val newHits = transaction {
+            val hit = HitsTable.insert {
+                it[this.itemId] = id.toInt()
+                it[this.hitsCount] = 1
+                if (authProfile != null) {
+                    it[this.profileId] = authProfile.id
+                }
+            }.resultedValues ?: return@transaction null
+            return@transaction hit
+        }
+        //조회수 row객체보내기
+        if(newHits != null){
+            println("신간데이터 레빗으로 보내요")
+            sendHits(newHits)
+        }
+
         return newBook
     }
+    //조회수 레빗mq
+    fun sendHits(hits: List<ResultRow>){
+        println("이제 진짜 레빗으로 가요")
+        rabbitTemplate.convertAndSend("hits-queue", mapper.writeValueAsString(hits))
+    }
 
-    //신간 댓글 찾기
+    //도서 상세 조회
+    fun getBooks (id: Long, authProfile: AuthProfile?) : BookResponse? {
+        val b = Books
+        val c = BookComments
+        val pf = Profiles
+        val r = ReplyComments
+
+//        val slices = (b leftJoin (c innerJoin pf))
+//                .slice(b.columns + c.id + commentCount + pf.id)
+
+        //답글 찾기
+        val reply : List<ReplyCommentResponse> = transaction {
+            (r innerJoin c).join (pf, JoinType.LEFT, onColumn = pf.id, otherColumn = r.profileId)
+                .select { (r.bookId eq id) and (r.bookCommentId eq c.id) }
+                .orderBy(r.id to SortOrder.DESC)
+                .mapNotNull { row ->
+                    ReplyCommentResponse(
+                        row[r.id].value, row[r.comment], row[pf.nickname]
+                        , row[r.createdDate], row[c.id].value
+                    )
+                }
+        }
+        println(reply+"replyComments ------------------")
+        //댓글 찾기
+        val comments: List<BookCommentResponse> = transaction {
+            (c innerJoin pf leftJoin r)
+                .slice(c.columns + c.id + pf.id + pf.nickname + r.columns)
+                .select{ (c.bookId eq id) }
+                .orderBy(c.id to SortOrder.DESC)
+                .mapNotNull { r ->
+                    val commentReplies = reply.filter { replyComment ->
+                        replyComment.parentId == r[c.id].value
+                    }
+                    BookCommentResponse (
+                        r[c.id].value, r[c.comment], r[pf.nickname],
+                        r[c.createdDate], replyComment = commentReplies
+                    ) }
+        }
+        //선호작품 찾기
+        val likes = transaction {
+            (LikeBooks innerJoin pf)
+                .select { LikeBooks.bookId eq id }
+                .mapNotNull { r -> LikedBookResponse(
+                    r[LikeBooks.id].value, r[pf.id].value, r[LikeBooks.likes]
+                ) }
+        }
+        println("책찾기")
+        val book = transaction {
+            b.select { (b.id eq id)}
+                .mapNotNull { r ->
+                    //집계 함수식의 별칭 설정
+                    val commentCount = comments.size.toLong()
+                    BookResponse(
+                        r[b.id].value, r[b.publisher], r[b.title], r[b.link], r[b.author], r[b.pubDate],
+                        r[b.description], r[b.isbn], r[b.isbn13], r[b.itemId], r[b.priceSales],
+                        r[b.priceStandard], r[b.stockStatus], r[b.cover],
+                        r[b.categoryId], r[b.categoryName], commentCount = commentCount,
+                        bookComment = comments, likedBook = likes
+                    ) }
+                .singleOrNull() }
+
+        //조회수 테이블 만들기
+        val newHits = transaction {
+            val hit = HitsTable.insert {
+                it[this.itemId] = id.toInt()
+                it[this.hitsCount] = 1
+                if (authProfile != null) {
+                    it[this.profileId] = authProfile.id
+                }
+            }.resultedValues ?: return@transaction null
+            return@transaction hit
+        }
+        //조회수 row객체보내기
+        if(newHits != null){
+            println("도서데이터 레빗으로 보내요")
+            sendHits(newHits)
+        }
+
+        return book
+
+    }
+
+    //댓글 찾기
     fun findComment (id: Long, profileId: Long) : ResultRow? {
         val comment = transaction {
             BookComments
@@ -347,6 +469,44 @@ class BookService
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
         }
     }
+
+    //신간 도서 댓글 리스트 찾기
+//    fun getNewBooksComments(id: Long): List<BookCommentResponse> {
+//        val c = BookComments
+//        val pf = Profiles
+//        val r = ReplyComments
+//
+//        //답글 찾기
+//        val reply : List<ReplyCommentResponse> = transaction {
+//            (r innerJoin c).join (pf, JoinType.LEFT, onColumn = pf.id, otherColumn = r.profileId)
+//                .select { (r.bookId eq id) and (r.bookCommentId eq c.id) }
+//                .orderBy(r.id to SortOrder.DESC)
+//                .mapNotNull { row ->
+//                    ReplyCommentResponse(
+//                        row[r.id].value, row[r.comment], row[pf.nickname]
+//                        , row[r.createdDate], row[c.id].value
+//                    )
+//                }
+//        }
+//        println(reply+"신간 replyComments ------------------")
+//
+//        //댓글 찾기
+//        val comments: List<BookCommentResponse> = transaction {
+//            (c innerJoin pf leftJoin r)
+//                .slice(c.columns + c.id + pf.id + pf.nickname + r.columns)
+//                    .select{(c.newBookId eq id)}
+//                    .orderBy(c.id to SortOrder.DESC)
+//                    .mapNotNull { r ->
+//                        val commentReplies = reply.filter { replyComment ->
+//                            replyComment.parentId == r[c.id].value
+//                        }
+//                        BookCommentResponse (
+//                        r[c.id].value, r[c.comment], r[pf.nickname],
+//                        r[c.createdDate], replyComment = commentReplies
+//                    ) }
+//        }
+//        return comments
+//    }
 
 
 
