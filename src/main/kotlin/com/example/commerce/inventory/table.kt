@@ -1,5 +1,6 @@
 package com.example.commerce.inventory
 
+import com.example.commerce.auth.Profiles
 import com.example.commerce.books.*
 import jakarta.annotation.PostConstruct
 import org.jetbrains.exposed.dao.id.LongIdTable
@@ -18,15 +19,21 @@ object TodayBook: LongIdTable("today_book"){
     val itemId = integer("item_id")
 }
 
+object HitsTable: LongIdTable("hits_table"){
+    val itemId = integer("item_id")
+    val profileId = reference("profile_id", Profiles).nullable()
+    val hitsCount = long("hits_count")
+}
+
 //테이블 생성
-//@Configuration
-//class BookTableSetUp(private val database: Database) {
-//    @PostConstruct
-//    fun migrateSchema() {
-//        transaction(database) {
-//            SchemaUtils.createMissingTablesAndColumns(
-//                TodayBook
-//            )
-//        }
-//    }
-//}
+@Configuration
+class InventoryTableSetUp(private val database: Database) {
+    @PostConstruct
+    fun migrateSchema() {
+        transaction(database) {
+            SchemaUtils.createMissingTablesAndColumns(
+                HitsTable
+            )
+        }
+    }
+}
