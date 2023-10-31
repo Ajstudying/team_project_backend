@@ -1,0 +1,68 @@
+package com.example.commerce.payment
+
+import com.example.commerce.books.Books
+import com.example.commerce.order.OrderSales
+import com.example.commerce.order.OrderSalesRequest
+import com.example.commerce.order.Orders
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.plus
+import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.update
+import org.springframework.data.redis.core.RedisTemplate
+import org.springframework.scheduling.annotation.Scheduled
+import org.springframework.stereotype.Service
+import java.util.*
+
+@Service
+class PaymentService(
+    private val paymentController: PaymentController,
+    private val paymentClient: PaymentClient,
+    private val redisTemplate: RedisTemplate<String, String>
+) {
+    // Object <-> JSON
+    private val mapper = jacksonObjectMapper()
+
+    // 애플리케이션을 시작하면 한 번은 수행됨
+//    @Scheduled(fixedRate = 1000 * 60)
+//    @Scheduled(fixedRate = 1000 * 60 * 60)
+//    @Scheduled(cron = "* 5 * * * * *")
+//    @Scheduled(cron = "0 */5 * * * *")
+
+    private val REDIS_KEY = "bank-deposit"
+
+    @Scheduled(cron = "0 */5 * * * *")
+    fun scheduledFetchBankDeposit() {
+        println("--called by schedule: ${Date().time}--")
+        val result = paymentClient.getBankDeposit()
+
+        println("paymentClient.getBankDeposit: " + result)
+
+        // RedisTemplate<key=String, value=String>
+        // default: localhost:6379
+        redisTemplate.delete(REDIS_KEY) // 캐시 데이터 삭제
+        // 캐시 데이터 생성
+        redisTemplate.opsForValue()
+            .set(REDIS_KEY, mapper.writeValueAsString(result))
+
+        paymentController.updateOrderDone();
+
+    }
+
+    fun getCachedBankDeposit(): List<BankDepositResponse> {
+        val result = redisTemplate.opsForValue().get(REDIS_KEY)
+        if (result != null) {
+            // value(json) -> List<TopProductResponse>
+            val list: List<BankDepositResponse> = mapper.readValue(result)
+            return list
+        } else {
+            // 빈배열 반환
+            return listOf()
+        }
+    }
+
+
+}

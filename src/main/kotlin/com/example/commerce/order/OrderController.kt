@@ -120,7 +120,7 @@ class OrderController(private val service: OrderService, private val salesServic
 
                 }
 
-            if ((orderStatus.equals("1")) || (orderStatus.equals("2"))) {
+            if ((orderStatus.equals("0")) || (orderStatus.equals("1")) || (orderStatus.equals("2"))) {
                 println("주문상태에 따른 쿼리 처리....")
                 query = Orders
                     .slice(o.id, o.paymentMethod, o.paymentPrice, o.orderStatus, o.orderDate)
