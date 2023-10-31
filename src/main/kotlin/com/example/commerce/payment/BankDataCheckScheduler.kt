@@ -27,7 +27,7 @@ class BankDataCheckScheduler(
 
 
     // 5분 마다 처리
-    @Scheduled(cron = "0 */5 * * * *")
+//    @Scheduled(cron = "0 */5 * * * *")
     fun scheduledFetchBankDeposit() {
         println("======= scheduledFetchBankDeposit ${Date().time} =======행")
 
