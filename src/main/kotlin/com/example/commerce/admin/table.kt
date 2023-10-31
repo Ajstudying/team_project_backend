@@ -1,7 +1,6 @@
-package com.example.commerce.inventory
+package com.example.commerce.admin
 
 import com.example.commerce.auth.Profiles
-import com.example.commerce.books.*
 import jakarta.annotation.PostConstruct
 import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.Database
@@ -15,14 +14,15 @@ object TodayBook: LongIdTable("today_book"){
     val author = varchar("author", 512)
     val priceSales = integer("price_sales")
     val todayLetter = varchar("today_letter", 512)
-    val bookId = reference("book_id", Books.id)
     val itemId = integer("item_id")
+    val createdDate = varchar("created_date",32)
 }
 
 object HitsTable: LongIdTable("hits_table"){
     val itemId = integer("item_id")
     val profileId = reference("profile_id", Profiles).nullable()
     val hitsCount = long("hits_count")
+    val createdDate = varchar("created_date",32)
 }
 
 //테이블 생성
@@ -32,7 +32,7 @@ class InventoryTableSetUp(private val database: Database) {
     fun migrateSchema() {
         transaction(database) {
             SchemaUtils.createMissingTablesAndColumns(
-                HitsTable
+                HitsTable, TodayBook
             )
         }
     }

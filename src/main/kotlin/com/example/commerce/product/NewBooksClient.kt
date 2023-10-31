@@ -1,4 +1,4 @@
-package com.example.commerce.inventory
+package com.example.commerce.product
 
 import com.example.commerce.books.NewBookDataResponse
 import org.springframework.cloud.openfeign.FeignClient
