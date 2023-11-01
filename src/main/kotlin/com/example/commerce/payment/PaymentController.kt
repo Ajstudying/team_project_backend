@@ -1,19 +1,11 @@
 package com.example.commerce.payment
 
-import com.example.commerce.inventory.NewBooksClient
-import com.example.commerce.order.OrderResponse
-import com.example.commerce.order.OrderService
-import com.example.commerce.order.Orders
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import org.jetbrains.exposed.sql.select
-import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
-import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
@@ -44,7 +36,7 @@ class PaymentController(private val paymentService: PaymentService, private val 
         }
 
         paymentService.updateOrdersStatus(bankDepositList)
-        
+
         return ResponseEntity.status(HttpStatus.OK).build()
     }
 
