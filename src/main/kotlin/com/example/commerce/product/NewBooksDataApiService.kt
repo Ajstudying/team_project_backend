@@ -1,4 +1,4 @@
-package com.example.commerce.inventory
+package com.example.commerce.product
 
 import com.example.commerce.books.BookDataResponse
 import org.slf4j.LoggerFactory
@@ -8,8 +8,9 @@ import org.springframework.stereotype.Component
 
 @EnableScheduling
 @Component
-class NewBookDataScheduler(
-    private val newBookApiController: NewBookApiController, private val newBooksClient: NewBooksClient
+class NewBooksDataApiService(
+        private val newBooksApiController: NewBooksApiController,
+        private val newBooksClient: NewBooksClient
 ) {
     //에러 로그 확인을 위해
     private val logger = LoggerFactory.getLogger(this.javaClass.name)
@@ -29,13 +30,15 @@ class NewBookDataScheduler(
             val foreignDataFromExternalAPI: List<BookDataResponse> = newBooksClient.foreignFetch().item
 
             // 가져온 데이터를 처리하고 데이터베이스에 삽입
-            newBookApiController.postDataToMyServer()
-            newBookApiController.postForeignDataMyServer()
+            newBooksApiController.postDataToMyServer(dataFromExternalAPI)
+            newBooksApiController.postForeignDataMyServer(foreignDataFromExternalAPI)
         }catch (e: Exception) {
             //에러메세지 확인
             logger.error(e.message)
         }
 
     }
+
+
 
 }
