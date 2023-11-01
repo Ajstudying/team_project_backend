@@ -1,6 +1,7 @@
 package com.example.commerce.books
 
 
+import com.example.commerce.admin.HitsDataResponse
 import com.example.commerce.auth.AuthProfile
 import com.example.commerce.auth.Profiles
 import com.example.commerce.admin.HitsTable
@@ -127,28 +128,59 @@ class BookService
         val formattedDateTime = currentDateTime.format(formatter)
 
         //조회수 테이블 만들기
-        val newHits = transaction {
-            val hit = HitsTable.insert {
+        val (result, newHits) = transaction {
+            val result = HitsTable.insert {
                 it[this.itemId] = id.toInt()
                 it[this.hitsCount] = 1
                 if (authProfile != null) {
                     it[this.profileId] = authProfile.id
                 }
                 it[this.createdDate] = formattedDateTime
-            }.resultedValues ?: return@transaction null
-            return@transaction hit
+            }.resultedValues ?: return@transaction Pair(false, null)
+            val record = result.first()
+            if (authProfile != null) {
+                val hits = (Profiles innerJoin HitsTable)
+                        .select { HitsTable.profileId eq authProfile.id }
+                        .mapNotNull {r->
+                            HitsDataResponse(
+                                    record[HitsTable.itemId],
+                                    r[Profiles.nickname],
+                                    r[Profiles.birth],
+                                    r[Profiles.bookmark],
+                                    record[HitsTable.hitsCount],
+                                    record[HitsTable.createdDate]
+                            )
+
+                        }
+                return@transaction Pair(true, hits)
+            } else {
+                return@transaction Pair(true, HitsDataResponse(
+                        record[HitsTable.itemId],
+                        null,
+                        null,
+                        null,
+                        record[HitsTable.hitsCount],
+                        record[HitsTable.createdDate],
+
+                ))
+            }
         }
         //조회수 row 객체보내기
-        if(newHits != null){
+        if(result){
             println("신간데이터 레빗으로 보내요")
-            sendHits(newHits)
+            val hitsDataResponse = newHits as? HitsDataResponse
+            if(hitsDataResponse != null){
+                sendHits(hitsDataResponse)
+            }
+
         }
 
         return newBook
     }
     //조회수 레빗 mq
-    fun sendHits(hits: List<ResultRow>){
+    fun sendHits(hits: HitsDataResponse){
         println("이제 진짜 레빗으로 가요")
+
         rabbitTemplate.convertAndSend("hits-queue", mapper.writeValueAsString(hits))
     }
 
@@ -218,22 +250,53 @@ class BookService
         val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
         val formattedDateTime = currentDateTime.format(formatter)
         //조회수 테이블 만들기
-        val newHits = transaction {
-            val hit = HitsTable.insert {
+        val (result, newHits) = transaction {
+            val result = HitsTable.insert {
                 it[this.itemId] = id.toInt()
                 it[this.hitsCount] = 1
                 if (authProfile != null) {
                     it[this.profileId] = authProfile.id
                 }
                 it[this.createdDate] = formattedDateTime
-            }.resultedValues ?: return@transaction null
-            return@transaction hit
+            }.resultedValues ?: return@transaction Pair(false, null)
+            val record = result.first()
+            if (authProfile != null) {
+                val hits = (Profiles innerJoin HitsTable)
+                        .select { HitsTable.profileId eq authProfile.id }
+                        .mapNotNull {r->
+                            HitsDataResponse(
+                                    record[HitsTable.itemId],
+                                    r[Profiles.nickname],
+                                    r[Profiles.birth],
+                                    r[Profiles.bookmark],
+                                    record[HitsTable.hitsCount],
+                                    record[HitsTable.createdDate]
+                            )
+
+                        }
+                return@transaction Pair(true, hits)
+            } else {
+                return@transaction Pair(true, HitsDataResponse(
+                        record[HitsTable.itemId],
+                        null,
+                        null,
+                        null,
+                        record[HitsTable.hitsCount],
+                        record[HitsTable.createdDate],
+
+                        ))
+            }
         }
         //조회수 row 객체보내기
-        if(newHits != null){
-            println("도서데이터 레빗으로 보내요")
-            sendHits(newHits)
+        if(result){
+            println("신간데이터 레빗으로 보내요")
+            val hitsDataResponse = newHits as? HitsDataResponse
+            if(hitsDataResponse != null){
+                sendHits(hitsDataResponse)
+            }
+
         }
+
 
         return book
 
