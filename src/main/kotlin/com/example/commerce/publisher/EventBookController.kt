@@ -12,22 +12,22 @@ class EventBookController {
 
     @GetMapping("/event")
     fun fetch() = transaction() {
-        val p = Publisher
+
         val e = EventBooks
 
-        p.selectAll().map { r ->
+        e.selectAll().map { r ->
             EventBookResponse(
-                r[p.id].value,
-                r[p.itemId],
-                r[p.title],
-                r[p.author],
-                r[e.authorImage],
-                r[e.authorDesc],
-                r[p.cover],
-                r[e.descTitle],
-                r[e.description],
-                r[e.descCover],
-                r[p.publisher],
+                    r[e.id].value,
+                    r[e.itemId],
+                    r[e.title],
+                    r[e.description],
+                    r[e.cover],
+                    r[e.textSentence],
+                    r[e.mentSentence],
+                    r[e.authorImage],
+                    r[e.author],
+                    r[e.publisher],
+                    r[e.authorDescription],
             )
         }
     }
