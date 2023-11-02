@@ -49,13 +49,9 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
     }
     @GetMapping("/best")
     fun pagingBest(@RequestParam size: Int, @RequestParam page: Int)
-    : Page<BookListResponse> = transaction (Connection.TRANSACTION_READ_COMMITTED, readOnly = true){
+    : Page<BookBestResponse > = transaction (Connection.TRANSACTION_READ_COMMITTED, readOnly = true){
         val b = Books
         val o = OrderItem
-        val c = BookComments
-
-        //집계 함수식의 별칭 설정
-        val commentCount = c.id.count().alias("commentCount")
 //        // 주문량 정보를 가져오기 위해 OrderItem 테이블을 조인하고 quantity를 가져옴
 //        val quantity =
 //            (b leftJoin o)
@@ -68,13 +64,13 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
         val books =
 //                (b leftJoin c).join(OrderItem, JoinType.INNER, onColumn = o.itemId, otherColumn = b.itemId)
                 //order_item 테이블이 비어있으면 전체 조회하기 위해
-              (b leftJoin c).join(OrderItem, JoinType.LEFT, onColumn = o.itemId, otherColumn = b.itemId)
-            .slice(b.columns + o.columns + commentCount)
+            b.join(OrderItem, JoinType.INNER, onColumn = o.itemId, otherColumn = b.itemId)
+            .slice(b.columns + o.columns)
             .selectAll()
             .groupBy(b.itemId, o.itemId, b.id, o.id)
             .orderBy(o.quantity.sum(), SortOrder.DESC)
-            //상위 10개 작품으로 제한
-            .limit(10).map { r ->
+            .limit(20)
+            .map { r ->
                 //선호작품 찾기
                 val bookId = r[b.id].value
                 val bookLikes = transaction {
@@ -84,14 +80,15 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
                             r[LikeBooks.id].value, r[LikeBooks.profileId].value, r[LikeBooks.likes]
                         ) }
                 }
-                BookListResponse(
+                BookBestResponse (
                     r[b.id].value, r[b.publisher], r[b.title], r[b.link], r[b.author], r[b.pubDate],
                     r[b.description],r[b.isbn], r[b.isbn13], r[b.itemId], r[b.priceSales],
                     r[b.priceStandard], r[b.stockStatus], r[b.cover], r[b.categoryId],
                     r[b.categoryName],
-                    r[b.customerReviewRank],r[commentCount], likedBook = bookLikes,
+                    r[b.customerReviewRank], likedBook = bookLikes,
                 )
             }
+            .distinct()
 
 
 
@@ -371,10 +368,12 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
     //도서상세
     @GetMapping("/{id}")
     fun selectBook
-                (@PathVariable id: Long, @RequestAttribute authProfile: AuthProfile?)
+                (@PathVariable id: Long, @RequestParam(required = true) profileId: Long?)
     : ResponseEntity<BookResponse>{
-        println("pages open!!!")
-        val book = service.getBooks(id, authProfile)
+        println("도세 상세페이지 조회")
+        println(profileId)
+
+        val book = service.getBooks(id, profileId)
 
         return book?.let { ResponseEntity.ok(it) } ?:
         ResponseEntity.status(HttpStatus.NOT_FOUND).build()
@@ -383,11 +382,11 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
     //신간도서상세
     @GetMapping("/new/{id}")
     fun selectNewBook(
-        @PathVariable id: Long, @RequestAttribute authProfile: AuthProfile?)
+        @PathVariable id: Long,  @RequestParam(required = true) profileId: Long?)
     : ResponseEntity<BookResponse>{
         println("신간상세페이지조회")
 
-        val book = service.getNewBook(id, authProfile)
+        val book = service.getNewBook(id, profileId)
 
         return book?.let { ResponseEntity.ok(it) } ?:
         ResponseEntity.status(HttpStatus.NOT_FOUND).build()
@@ -509,7 +508,7 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
 
         val (result, response) = transaction {
             //원 댓글이 있는지 확인
-            val originalComment = BookComments.select{ BookComments.id eq commentId}.singleOrNull()
+            BookComments.select{ BookComments.id eq commentId}.singleOrNull()
                     ?: return@transaction Pair(false, null)
 
             //있으면 답글 추가
@@ -546,7 +545,7 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
                            @RequestAttribute authProfile: AuthProfile): ResponseEntity<Any>{
 
         //댓글 찾기
-        val comment = transaction {
+        transaction {
             ReplyComments.select(where =
             (ReplyComments.id eq id) and
                     (ReplyComments.profileId eq authProfile.id) and

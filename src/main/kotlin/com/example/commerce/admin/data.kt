@@ -22,10 +22,18 @@ data class TodayLetterResponse(
 )
 
 data class HitsDataResponse(
-        val itemId: Int,
-        val nickname: String?,
-        val birth: String?,
-        val bookmark: String?,
-        val hitsCount: Long,
-        val createDate: String,
+    val itemId: Int,
+    val nickname: String?,
+    val birth: Int?,
+    val bookmark: String?,
+    val hitsCount: Long,
+    val createDate: String,
+    val gender: Int?,
+)
+
+data class MainFileResponse(
+    val id: Long,
+    val uuidFileName: String,
+    val originalFileName: String,
+    val contentType: String,
 )

@@ -1,6 +1,7 @@
 package com.example.commerce.books
 
 
+import com.example.commerce.admin.AdminService
 import com.example.commerce.admin.HitsDataResponse
 import com.example.commerce.auth.AuthProfile
 import com.example.commerce.auth.Profiles
@@ -22,11 +23,10 @@ import java.time.format.DateTimeFormatter
 
 @Service
 class BookService
-    (private val rabbitTemplate: RabbitTemplate,
-     private val redisTemplate: RedisTemplate<String, String>)
+    (private val redisTemplate: RedisTemplate<String, String>,
+     private val adminService: AdminService)
 //     private val redisTemplate: RedisTemplate<Long, String>)
 {
-
     private val mapper = jacksonObjectMapper()
 
     fun getCachedBookList(): List<BookDataResponse> {
@@ -64,7 +64,7 @@ class BookService
     }
 
     //신간 도서 상세 찾기
-    fun getNewBook(id: Long, authProfile: AuthProfile?): BookResponse? {
+    fun getNewBook(id: Long, profileId: Long?): BookResponse? {
         val n = NewBooks
         val c = BookComments
         val pf = Profiles
@@ -122,70 +122,18 @@ class BookService
                     ) }
                 .singleOrNull() }
 
-        val currentDateTime = LocalDateTime.now()
-        // 출력 형식을 정의하기 위한 DateTimeFormatter 사용 (선택 사항)
-        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
-        val formattedDateTime = currentDateTime.format(formatter)
-
-        //조회수 테이블 만들기
-        val (result, newHits) = transaction {
-            val result = HitsTable.insert {
-                it[this.itemId] = id.toInt()
-                it[this.hitsCount] = 1
-                if (authProfile != null) {
-                    it[this.profileId] = authProfile.id
-                }
-                it[this.createdDate] = formattedDateTime
-            }.resultedValues ?: return@transaction Pair(false, null)
-            val record = result.first()
-            if (authProfile != null) {
-                val hits = (Profiles innerJoin HitsTable)
-                        .select { HitsTable.profileId eq authProfile.id }
-                        .mapNotNull {r->
-                            HitsDataResponse(
-                                    record[HitsTable.itemId],
-                                    r[Profiles.nickname],
-                                    r[Profiles.birth],
-                                    r[Profiles.bookmark],
-                                    record[HitsTable.hitsCount],
-                                    record[HitsTable.createdDate]
-                            )
-
-                        }
-                return@transaction Pair(true, hits)
-            } else {
-                return@transaction Pair(true, HitsDataResponse(
-                        record[HitsTable.itemId],
-                        null,
-                        null,
-                        null,
-                        record[HitsTable.hitsCount],
-                        record[HitsTable.createdDate],
-
-                ))
-            }
-        }
-        //조회수 row 객체보내기
-        if(result){
-            println("신간데이터 레빗으로 보내요")
-            val hitsDataResponse = newHits as? HitsDataResponse
-            if(hitsDataResponse != null){
-                sendHits(hitsDataResponse)
-            }
-
+        val itemId = n.select { n.id eq id }.singleOrNull()?.get(n.itemId)?.toInt()
+        if(itemId != null){
+            //조회수 테이블 만들기
+            adminService.sendRabbitData(itemId, profileId)
         }
 
         return newBook
     }
-    //조회수 레빗 mq
-    fun sendHits(hits: HitsDataResponse){
-        println("이제 진짜 레빗으로 가요")
 
-        rabbitTemplate.convertAndSend("hits-queue", mapper.writeValueAsString(hits))
-    }
 
     //도서 상세 조회
-    fun getBooks (id: Long, authProfile: AuthProfile?) : BookResponse? {
+    fun getBooks (id: Long, profileId: Long?) : BookResponse? {
         val b = Books
         val c = BookComments
         val pf = Profiles
@@ -245,58 +193,14 @@ class BookService
                     ) }
                 .singleOrNull() }
 
-        val currentDateTime = LocalDateTime.now()
-        // 출력 형식을 정의하기 위한 DateTimeFormatter 사용 (선택 사항)
-        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
-        val formattedDateTime = currentDateTime.format(formatter)
-        //조회수 테이블 만들기
-        val (result, newHits) = transaction {
-            val result = HitsTable.insert {
-                it[this.itemId] = id.toInt()
-                it[this.hitsCount] = 1
-                if (authProfile != null) {
-                    it[this.profileId] = authProfile.id
-                }
-                it[this.createdDate] = formattedDateTime
-            }.resultedValues ?: return@transaction Pair(false, null)
-            val record = result.first()
-            if (authProfile != null) {
-                val hits = (Profiles innerJoin HitsTable)
-                        .select { HitsTable.profileId eq authProfile.id }
-                        .mapNotNull {r->
-                            HitsDataResponse(
-                                    record[HitsTable.itemId],
-                                    r[Profiles.nickname],
-                                    r[Profiles.birth],
-                                    r[Profiles.bookmark],
-                                    record[HitsTable.hitsCount],
-                                    record[HitsTable.createdDate]
-                            )
-
-                        }
-                return@transaction Pair(true, hits)
-            } else {
-                return@transaction Pair(true, HitsDataResponse(
-                        record[HitsTable.itemId],
-                        null,
-                        null,
-                        null,
-                        record[HitsTable.hitsCount],
-                        record[HitsTable.createdDate],
-
-                        ))
-            }
+        val itemId = transaction {
+            b.select { b.id eq id }.singleOrNull()?.get(b.itemId)?.toInt()
         }
-        //조회수 row 객체보내기
-        if(result){
-            println("신간데이터 레빗으로 보내요")
-            val hitsDataResponse = newHits as? HitsDataResponse
-            if(hitsDataResponse != null){
-                sendHits(hitsDataResponse)
-            }
-
+        println(itemId)
+        if(itemId != null){
+            //조회수 테이블 만들기
+            adminService.sendRabbitData(itemId, profileId)
         }
-
 
         return book
 
