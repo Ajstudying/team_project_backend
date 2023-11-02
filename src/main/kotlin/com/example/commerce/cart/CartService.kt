@@ -1,6 +1,7 @@
 package com.example.commerce.cart
 
 import com.example.commerce.auth.AuthProfile
+import com.example.commerce.books.Books
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -22,6 +23,22 @@ class CartService(private val database: Database) {
 
         val cartId = transaction {
             try {
+                // 해당 도서가 북마스터에 존재하는지 체크한다.
+                // SQL
+                // select count(*) from books
+                // where item_id = :item_id;
+                val countBooksItem =
+                        Books
+                                .select { (Books.itemId eq req.itemId) }
+                                .count().toInt()
+
+                println("해당 도서가 북마스터에 존재하는지 체크한다.(countBooksItem) >> " + countBooksItem);
+
+                // 해당 도서가 북마스터에 없으면...
+                if (countBooksItem === 0) {
+                    println("*** 해당 도서가 북마스터 정보에 없습니다. Books 테이블에 확인 필요 >>> itemId:" + req.itemId)
+                    return@transaction -404
+                }
 
                 // 해당 도서가 이미 장바구니에 담겨져 있는지 체크한다.
                 // SQL
@@ -79,7 +96,7 @@ class CartService(private val database: Database) {
                 rollback()
                 //에러메세지 확인
                 logger.error(e.message)
-                return@transaction 0
+                return@transaction -1
             }
         }
         return cartId

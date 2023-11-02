@@ -73,7 +73,13 @@ class CartController(private val service: CartService) {
             // 200 OK
             return ResponseEntity.ok().build()
         } else {
-            return ResponseEntity.status(HttpStatus.NOT_MODIFIED).build()
+            // 해당 도서가 북마스터에 없으면, 404 에러 리턴
+            if (cartId.toInt() === -404) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_MODIFIED).build()
+            }
+
         }
     }
 
@@ -167,6 +173,42 @@ class CartController(private val service: CartService) {
                 println("-- 결과값 확인 : " + result)
 
                 return@transaction result
+            }
+
+    @Auth
+    @GetMapping("/books/count/{itemId}")
+    fun isExistBookItem(@PathVariable itemId: Int, @RequestAttribute authProfile: AuthProfile): Boolean =
+            transaction(Connection.TRANSACTION_READ_UNCOMMITTED, readOnly = true) {
+
+                println("<<< CartController /books/cart/count >>>")
+                println("입력 값 확인")
+                println(
+                        "profileId:" + authProfile.id.toString() +
+                                ",itemId:" + itemId
+                )
+
+                var isExistBookItem: Boolean = false;
+
+                // 해당 도서가 북마스터에 존재하는지 체크한다.
+                // SQL
+                // select count(*) from books
+                // where item_id = :item_id;
+                val countBooksItem =
+                        Books
+                                .select { (Books.itemId eq itemId) }
+                                .count().toInt()
+
+                println("해당 도서가 북마스터에 존재하는지 체크한다.(countBooksItem) >> " + countBooksItem);
+
+                // 해당 도서가 북마스터에 없으면...
+                if (countBooksItem === 0) {
+                    println("*** 해당 도서가 북마스터 정보에 없습니다. Books 테이블에 확인 필요 >>> itemId:" + itemId)
+                    return@transaction false
+                }
+
+                println("countBooksItem >> " + countBooksItem);
+
+                return@transaction true
             }
 
 }
