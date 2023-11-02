@@ -65,9 +65,6 @@ class OrderService(private val database: Database) {
                 // 5. 주문 판매데이터 업데이트
                 updateOrderSales(resultOrderItems)
 
-                // 6. 주문 데이터 관리시스템으로 Message 전송(RabbitMQ 이용)
-//                OrderSalesService.sendOrder()
-
                 resultOrderId = orderId
             } catch (e: Exception) {
                 rollback()
