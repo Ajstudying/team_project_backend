@@ -25,6 +25,12 @@ object HitsTable: LongIdTable("hits_table"){
     val createdDate = varchar("created_date",32)
 }
 
+object MainFiles : LongIdTable("main_files"){
+    val originalFileName = varchar("original_file_name", 200)
+    val uuidFileName = varchar("uuid", 50).uniqueIndex()
+    val contentType = varchar("content_type", 100)
+}
+
 //테이블 생성
 @Configuration
 class InventoryTableSetUp(private val database: Database) {
