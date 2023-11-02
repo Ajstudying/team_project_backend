@@ -115,7 +115,7 @@ class AdminController(private val adminClient: AdminClient) {
                     println("filename: ${it.originalFilename}")
 
                     val uuidFileName =
-                        "${ UUID.randomUUID().toString() }" +
+                        "${ UUID.randomUUID() }" +
                                 ".${ it.originalFilename!!.split(".").last() }"
 
                     val filePath = dirPath.resolve(uuidFileName)
