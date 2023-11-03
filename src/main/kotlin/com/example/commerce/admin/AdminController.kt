@@ -133,9 +133,9 @@ class AdminController(private val adminClient: AdminClient) {
 
         val result = transaction {
             MainFiles.batchInsert(fileList){
-                this[MainFiles.uuidFileName] = it.get("uuidFileName") as String
-                this[MainFiles.originalFileName] = it.get("originalFileName") as String
-                this[MainFiles.contentType] = it.get("contentType") as String
+                this[MainFiles.uuidFileName] = it["uuidFileName"] as String
+                this[MainFiles.originalFileName] = it["originalFileName"] as String
+                this[MainFiles.contentType] = it["contentType"] as String
             }
             return@transaction null
         }
