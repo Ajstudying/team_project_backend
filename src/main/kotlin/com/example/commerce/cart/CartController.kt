@@ -145,6 +145,7 @@ class CartController(private val service: CartService) {
                             .join(Books, JoinType.INNER, onColumn = ci.itemId, otherColumn = b.itemId)
                             .join(Identities, JoinType.INNER, onColumn = c.profileId, otherColumn = i.id)
                             .slice(
+                                    b.id,
                                     ci.itemId,
                                     b.title,
                                     b.cover,
@@ -158,6 +159,7 @@ class CartController(private val service: CartService) {
                             .andWhere { i.userid eq authProfile.userid }
                             .map { r ->
                                 CartItemResponse(
+                                        r[b.id].value,
                                         r[ci.itemId],
                                         r[b.title],
                                         r[b.cover],
