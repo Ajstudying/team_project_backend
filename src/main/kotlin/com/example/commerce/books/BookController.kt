@@ -1,9 +1,9 @@
 package com.example.commerce.books
 
+import com.example.commerce.api.BookDataResponse
 import com.example.commerce.auth.Auth
 import com.example.commerce.auth.AuthProfile
-import com.example.commerce.auth.Profiles
-import com.example.commerce.order.OrderItem
+import com.example.commerce.order.OrderSales
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -51,7 +51,7 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
     fun pagingBest(@RequestParam size: Int, @RequestParam page: Int)
     : Page<BookBestResponse > = transaction (Connection.TRANSACTION_READ_COMMITTED, readOnly = true){
         val b = Books
-        val o = OrderItem
+        val o = OrderSales
 //        // 주문량 정보를 가져오기 위해 OrderItem 테이블을 조인하고 quantity를 가져옴
 //        val quantity =
 //            (b leftJoin o)
@@ -64,12 +64,11 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
         val books =
 //                (b leftJoin c).join(OrderItem, JoinType.INNER, onColumn = o.itemId, otherColumn = b.itemId)
                 //order_item 테이블이 비어있으면 전체 조회하기 위해
-            b.join(OrderItem, JoinType.INNER, onColumn = o.itemId, otherColumn = b.itemId)
+            b.join(OrderSales, JoinType.INNER, onColumn = o.itemId, otherColumn = b.itemId)
             .slice(b.columns + o.columns)
             .selectAll()
             .groupBy(b.itemId, o.itemId, b.id, o.id)
-            .orderBy(o.quantity.sum(), SortOrder.DESC)
-            .limit(20)
+            .orderBy(o.bookSales, SortOrder.DESC)
             .map { r ->
                 //선호작품 찾기
                 val bookId = r[b.id].value
@@ -88,9 +87,6 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
                     r[b.customerReviewRank], likedBook = bookLikes,
                 )
             }
-            .distinct()
-
-
 
         return@transaction PageImpl(books, PageRequest.of(page, size), books.size.toLong())
     }

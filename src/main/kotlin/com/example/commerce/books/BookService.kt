@@ -2,22 +2,18 @@ package com.example.commerce.books
 
 
 import com.example.commerce.admin.AdminService
-import com.example.commerce.admin.HitsDataResponse
-import com.example.commerce.auth.AuthProfile
+import com.example.commerce.api.BookDataResponse
 import com.example.commerce.auth.Profiles
-import com.example.commerce.admin.HitsTable
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.springframework.amqp.rabbit.core.RabbitTemplate
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
+
 
 
 

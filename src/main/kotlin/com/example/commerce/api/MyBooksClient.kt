@@ -1,6 +1,5 @@
-package com.example.commerce.product
+package com.example.commerce.api
 
-import com.example.commerce.books.BookDataResponse
 import com.example.commerce.books.Books
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.selectAll
