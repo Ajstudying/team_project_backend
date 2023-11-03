@@ -1,13 +1,12 @@
 package com.example.commerce.admin
 
-import com.example.commerce.auth.AuthProfile
 import com.example.commerce.auth.Profiles
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.LoggerFactory
 import org.springframework.amqp.rabbit.core.RabbitTemplate
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
@@ -15,11 +14,12 @@ import org.springframework.web.multipart.MultipartFile
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
+
 @EnableScheduling
 @Component
 class AdminService(
     private val adminClient: AdminClient,
-    private val rabbitTemplate: RabbitTemplate,
+    @Qualifier("rabbitTemplate1") private val rabbitTemplate: RabbitTemplate,
     private val adminController: AdminController) {
 
     private val mapper = jacksonObjectMapper()

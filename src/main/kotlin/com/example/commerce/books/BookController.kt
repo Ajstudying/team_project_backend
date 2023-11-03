@@ -342,7 +342,7 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
         //전체 결과 카운트
         val totalCount = query.count()
         val content = query
-            .orderBy(b.id to SortOrder.DESC)
+            .orderBy(b.isbn to SortOrder.DESC)
             .limit(size, offset = (size * page).toLong())
             .map{
                     r ->

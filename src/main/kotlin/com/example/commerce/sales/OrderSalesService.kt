@@ -2,6 +2,7 @@ package com.example.commerce.sales
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.springframework.amqp.rabbit.core.RabbitTemplate
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 
 // controller - req /  biz-logic  / res
@@ -9,7 +10,7 @@ import org.springframework.stereotype.Service
 // service - biz-logic
 
 @Service
-class OrderSalesService(private val rabbitTemplate: RabbitTemplate) {
+class OrderSalesService(@Qualifier("rabbitTemplate2") private val rabbitTemplate: RabbitTemplate,) {
     private val mapper = jacksonObjectMapper()
 
     fun createOrder(orderRequest: OrderSales) {

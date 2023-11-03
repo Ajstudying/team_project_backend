@@ -48,7 +48,7 @@ class MyBooksService(
 
     //매주 월요일 실행
 //    @Scheduled(cron = "0 31 17 * * *")
-    @Scheduled(cron = "0 10 10 ? * MON")
+    @Scheduled(cron = "0 10 10 ? * * *")
     fun scheduledNewBooks() {
         println("신간도서 원래 도서목록에 추가 스케줄 실행")
         //신간 도서 등록
@@ -56,7 +56,7 @@ class MyBooksService(
     }
 
     //    @Scheduled(cron = "0 33 17 * * *")
-    @Scheduled(cron = "0 12 10 ? * MON")
+    @Scheduled(cron = "0 12 10 ? * * *")
     fun scheduledForeignBooks() {
         println("외국도서 원래 도서목록에 추가 스케줄 실행")
         //신간 도서 등록
