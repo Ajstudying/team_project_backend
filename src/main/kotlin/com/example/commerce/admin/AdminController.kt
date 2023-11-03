@@ -31,6 +31,7 @@ class AdminController(private val adminClient: AdminClient) {
     //디렉토리 파일 경로
     private val ADMIN_FILE_PATH = "files/main"
 
+    //오늘의 북 데이터 받아서
     @PostMapping
     fun todayDataToMyServer(dataAPI: TodayDataResponse): ResponseEntity<Any> {
         val logger = LoggerFactory.getLogger(javaClass)
@@ -69,6 +70,7 @@ class AdminController(private val adminClient: AdminClient) {
         }
     }
 
+    //해당 날짜의 오늘의 북 데이터 가져오기
     @GetMapping
     fun fetchTodayLetter() : ResponseEntity<TodayLetterResponse> {
         val currentDateTime = LocalDateTime.now()
