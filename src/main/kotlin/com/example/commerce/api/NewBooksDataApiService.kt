@@ -119,9 +119,8 @@ class NewBooksDataApiService(
     }
 
     fun searchApi(keyword:String, size:Int, page:Int, searchTarget:String )
-    : Pair<Int, List<BookDataResponse>>?{
+    : Pair<Int, List<SearchDataResponse>>?{
         try {
-            println("제대로 실행되고 있음")
             println("$keyword, $size, $page, $searchTarget")
 //            val params = mapOf(
 //                "ttbkey" to "ttbrkddowls01111124001",
@@ -134,10 +133,10 @@ class NewBooksDataApiService(
 //                "SearchTarget" to "Book"
 //            )
 //            val response = searchBooksClient.searchFetch(params)
-            val response = searchBooksClient.searchFetch()
-           println(response)
-            val totalResult = response.totalResults.toInt()
-            println("$totalResult 데이터 받기")
+            val response = searchBooksClient.searchFetch(
+                    "ttbrkddowls01111124001", keyword, "Keyword", size, page,
+                    searchTarget, "js", "20131101")
+            val totalResult = response.totalResults
             val result = response.item
 
             return Pair(totalResult, result)
