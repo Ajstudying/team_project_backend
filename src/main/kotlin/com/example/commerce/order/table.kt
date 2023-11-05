@@ -27,6 +27,8 @@ object Orders : Table("orders") {
     // 주문상태 (1: 완료, 2:취소)
     val orderStatus = varchar("order_status", 1)
 
+    val cancelMemo = varchar("cancel_memo", 50).nullable();
+
     val profileId = reference("profile_id", Profiles)
 
     // 주문 key
