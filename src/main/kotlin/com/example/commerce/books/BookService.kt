@@ -9,6 +9,9 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageImpl
+import org.springframework.data.domain.PageRequest
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -42,15 +45,6 @@ class BookService
 //        } else {
 //            return emptyList() // 데이터가 없는 경우 빈 리스트 반환
 //        }
-    }
-
-    fun getNewCategory(option: String): List<BookDataResponse> {
-        val result = redisTemplate.opsForValue().get(option)
-        return if(result != null) {
-            mapper.readValue(result)
-        }else{
-            listOf()
-        }
     }
 
     //카운트별칭

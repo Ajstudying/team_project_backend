@@ -23,7 +23,7 @@ class NewBooksApiController (private  val newBooksDataApiService: NewBooksDataAp
     : ResponseEntity<Any> {
         println("신간 db 입력")
 
-        newBooksDataApiService.fetchNewDataMonthly()
+        newBooksDataApiService.fetchNewDataToday()
         return ResponseEntity.status(HttpStatus.OK).build()
 
     }
@@ -34,7 +34,7 @@ class NewBooksApiController (private  val newBooksDataApiService: NewBooksDataAp
     : ResponseEntity<Any> {
         println("외국도서신간 db입력")
 
-        newBooksDataApiService.fetchForeignDataMonthly()
+        newBooksDataApiService.fetchForeignDataToday()
         return ResponseEntity.status(HttpStatus.OK).build()
     }
 
@@ -74,7 +74,6 @@ class NewBooksApiController (private  val newBooksDataApiService: NewBooksDataAp
                 val totalCount = result.count().toLong()
                 logger.error("검색 결과가 null입니다.")
                 return@transaction  PageImpl(result, PageRequest.of(page, size), totalCount)
-                return@transaction Page.empty()
             }
         }
     }

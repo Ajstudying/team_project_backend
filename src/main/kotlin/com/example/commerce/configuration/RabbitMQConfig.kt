@@ -6,6 +6,7 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory
 import org.springframework.amqp.rabbit.connection.ConnectionFactory
 import org.springframework.amqp.rabbit.core.RabbitAdmin
 import org.springframework.amqp.rabbit.core.RabbitTemplate
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -22,25 +23,16 @@ class RabbitMQConfig {
     private val secondHost: String = ""
 
     @Bean
-    fun queue1() = Queue("hits-queue")
+    fun queue1() = Queue("create-order")
 
     @Bean
-    fun queue2() = Queue("create-order")
-
-    @Bean
-    fun rabbitAdmin1(connectionFactory1: ConnectionFactory): RabbitAdmin {
-        return RabbitAdmin(connectionFactory1)
-    }
-    @Bean
-    fun rabbitAdmin2(connectionFactory2: ConnectionFactory) : RabbitAdmin {
-        return RabbitAdmin(connectionFactory2)
-    }
+    fun queue2() = Queue("hits-queue")
 
     @Bean
     @Primary
     fun connectionFactory1(): ConnectionFactory {
         val connectionFactory = CachingConnectionFactory()
-        connectionFactory.setHost("192.168.100.94")
+        connectionFactory.setHost("192.168.100.204")
         connectionFactory.port = 5672
         connectionFactory.username = "rabbit"
         connectionFactory.setPassword("password1234!")
@@ -59,7 +51,7 @@ class RabbitMQConfig {
     @Bean
     fun connectionFactory2(): ConnectionFactory {
         val connectionFactory = CachingConnectionFactory()
-        connectionFactory.setHost("192.168.100.204")
+        connectionFactory.setHost("192.168.100.94")
         connectionFactory.port = 5672
         connectionFactory.username = "rabbit"
         connectionFactory.setPassword("password1234!")
@@ -74,16 +66,26 @@ class RabbitMQConfig {
         return factory
     }
 
+    @Bean
+    fun rabbitAdmin1(connectionFactory1: ConnectionFactory): RabbitAdmin {
+        return RabbitAdmin(connectionFactory1)
+    }
+    @Bean
+    fun rabbitAdmin2(connectionFactory2: ConnectionFactory) : RabbitAdmin {
+        return RabbitAdmin(connectionFactory2)
+    }
+
+
 
     @Bean
-    fun rabbitTemplate1(connectionFactory1: ConnectionFactory): RabbitTemplate {
+    fun rabbitTemplate1(@Qualifier("connectionFactory1") connectionFactory1: ConnectionFactory): RabbitTemplate {
         val rabbitTemplate = RabbitTemplate(connectionFactory1)
         // 메시지 컨버터 및 기타 구성 추가
         return rabbitTemplate
     }
 
     @Bean
-    fun rabbitTemplate2(connectionFactory2: ConnectionFactory): RabbitTemplate {
+    fun rabbitTemplate2(@Qualifier("connectionFactory2") connectionFactory2: ConnectionFactory): RabbitTemplate {
         val rabbitTemplate = RabbitTemplate(connectionFactory2)
         // 메시지 컨버터 및 기타 구성 추가
         return rabbitTemplate

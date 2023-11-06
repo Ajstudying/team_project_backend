@@ -6,6 +6,7 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.LoggerFactory
 import org.springframework.amqp.rabbit.core.RabbitTemplate
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.scheduling.annotation.Scheduled
@@ -19,7 +20,8 @@ import java.time.format.DateTimeFormatter
 @Component
 class AdminService(
     private val adminClient: AdminClient,
-    @Qualifier("rabbitTemplate1") private val rabbitTemplate: RabbitTemplate,
+    @Autowired
+    @Qualifier("rabbitTemplate2") private val rabbitTemplate2: RabbitTemplate,
     private val adminController: AdminController) {
 
     private val mapper = jacksonObjectMapper()
@@ -57,7 +59,7 @@ class AdminService(
     fun sendHits(hits: HitsDataResponse){
         println("이제 진짜 레빗으로 가요")
 
-        rabbitTemplate.convertAndSend("hits-queue", mapper.writeValueAsString(hits))
+        rabbitTemplate2.convertAndSend("hits-queue", mapper.writeValueAsString(hits))
     }
 
     fun sendRabbitData(itemId:Int, profileId:Long?){
