@@ -358,8 +358,8 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
 
     //도서상세
     @GetMapping("/{id}")
-    fun selectBook
-                (@PathVariable id: Long, @RequestParam(required = true) profileId: Long?)
+    fun selectBook(
+        @PathVariable id: Long, @RequestParam(required = true) profileId: Long?)
     : ResponseEntity<BookResponse>{
         println("도세 상세페이지 조회")
         println(profileId)
@@ -375,7 +375,6 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
     fun selectNewBook(
         @PathVariable id: Long,  @RequestParam(required = true) profileId: Long?)
     : ResponseEntity<BookResponse>{
-        println("신간상세페이지조회")
 
         val book = service.getNewBook(id, profileId)
 

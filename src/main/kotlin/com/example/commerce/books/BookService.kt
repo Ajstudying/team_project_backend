@@ -59,11 +59,11 @@ class BookService
         val c = BookComments
         val pf = Profiles
         val r = ReplyComments
-
+        println("신간 상세 페이지 조회")
         //답글 찾기
         val reply : List<ReplyCommentResponse> = transaction {
             (r innerJoin c).join (pf, JoinType.LEFT, onColumn = pf.id, otherColumn = r.profileId)
-                .select { (r.bookId eq id) and (r.bookCommentId eq c.id) }
+                .select { (r.newBookId eq id) and (r.bookCommentId eq c.id) }
                 .orderBy(r.id to SortOrder.DESC)
                 .mapNotNull { row ->
                     ReplyCommentResponse(
@@ -99,8 +99,7 @@ class BookService
         }
 
         val newBook = transaction {
-            n.select { (NewBooks.id eq id) }
-                .groupBy(n.id)  // groupBy 메소드로 그룹화할 기준 컬럼들을 지정
+            n.select { (n.id eq id) }
                 .mapNotNull { r ->
                     //집계 함수식의 별칭 설정
                     val commentCount = comments.size.toLong()
@@ -112,11 +111,13 @@ class BookService
                     ) }
                 .singleOrNull() }
 
-        val itemId = n.select { n.id eq id }.singleOrNull()?.get(n.itemId)?.toInt()
-        if(itemId != null){
-            //조회수 테이블 만들기
-            adminService.sendRabbitData(itemId, profileId)
-        }
+//        val itemId = transaction {
+//            n.select { n.id eq id }.singleOrNull()?.get(n.itemId)?.toInt()
+//        }
+//        if(itemId != null){
+//            //조회수 테이블 만들기
+//            adminService.sendRabbitData(itemId, profileId)
+//        }
 
         return newBook
     }

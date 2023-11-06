@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.lang.Long
+import java.lang.Long.min
 import java.sql.Connection
 
 
@@ -51,10 +52,10 @@ class MyBooksController(private val myBooksService: MyBooksService,
         val result: List<BookDataResponse> = myBooksService.getNewCategory(option)
         //데이터를 페이징 하기 위한 로직
         val start = page * size
-        val end = Long.min(start + size.toLong(), result.size.toLong())
+        val end = min(start + size.toLong(), result.size.toLong())
         val totalCount = result.size.toLong() // 전체 데이터 개수
 
-        val pagedData = result.subList(start, Long.min(end, totalCount).toInt())
+        val pagedData = result.subList(start, min(end, totalCount).toInt())
 
         return PageImpl(pagedData, PageRequest.of(page, size), totalCount)
     }

@@ -37,3 +37,11 @@ data class MainFileResponse(
     val originalFileName: String,
     val contentType: String,
 )
+
+data class StockStatusResponse(
+    val itemId: Int,
+    val previousStockStatus: String?,
+    val stockStatus: String,
+    val increase: Int,
+    val decrease: Int
+)
