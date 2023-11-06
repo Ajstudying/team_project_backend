@@ -1,6 +1,7 @@
 package com.example.commerce.admin
 
 import com.example.commerce.auth.Profiles
+import com.example.commerce.books.Books
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -20,9 +21,9 @@ import java.time.format.DateTimeFormatter
 @Component
 class AdminService(
     private val adminClient: AdminClient,
+    private val adminApiClient: AdminApiClient,
     @Autowired
-    @Qualifier("rabbitTemplate2") private val rabbitTemplate2: RabbitTemplate,
-    private val adminController: AdminController) {
+    @Qualifier("rabbitTemplate2") private val rabbitTemplate2: RabbitTemplate) {
 
     private val mapper = jacksonObjectMapper()
     //에러 로그 확인을 위해
@@ -31,7 +32,6 @@ class AdminService(
 //    @Scheduled(cron = "0 0 0 * * *")
     @Scheduled(cron = "0 45 9 * * *")
     fun fetchTodayData() {
-        println("오늘의 북데이터 가져오기")
         val currentDateTime = LocalDateTime.now()
         // 출력 형식을 정의하기 위한 DateTimeFormatter 사용 (선택 사항)
         val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
@@ -41,11 +41,30 @@ class AdminService(
             println("데이터 받기 시작해요!!")
             val dataAPI: TodayDataResponse = adminClient.getTodayBook("2023-10-31")
 
-            adminController.todayDataToMyServer(dataAPI)
+            val existingToday = TodayBook.select { TodayBook.itemId eq dataAPI.itemId }.singleOrNull()
+
+            if (existingToday == null) {
+                logger.info("오늘의 책 DB 입력 시작")
+                transaction {
+                    TodayBook.insert {
+                        it[cover] = dataAPI.cover
+                        it[title] = dataAPI.title
+                        it[author] = dataAPI.author
+                        it[priceSales] = dataAPI.priceSales
+                        it[todayLetter] = dataAPI.todayLetter
+                        it[itemId] = dataAPI.itemId
+                        it[createdDate] = formattedDateTime
+                    }
+                }
+                logger.info("오늘의 책 DB 입력 성공")
+            }else {
+                logger.info("이미 오늘의 책이 존재합니다.")
+            }
         }catch (e: Exception){
-        logger.error(e.message)
+            logger.error("오류 발생: ${e.message}")
         }
     }
+
     fun fetchImageFileData(){
         println("메인베너 이미지 배열 가져오기")
         try{
@@ -131,6 +150,28 @@ class AdminService(
                 sendHits(hitsDataResponse)
             }
 
+        }
+    }
+
+    @Scheduled(cron = "0 45 9 * * *")
+    fun fetchStockStatusData() {
+        val currentDateTime = LocalDateTime.now()
+        // 출력 형식을 정의하기 위한 DateTimeFormatter 사용 (선택 사항)
+        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+        val formattedDateTime = currentDateTime.format(formatter)
+
+        try {
+            logger.info("책 재고 DB 업데이트 시작")
+            val dataAPI: StockStatusResponse = adminApiClient.fetchStockStatus(formattedDateTime)
+
+            transaction {
+                Books.update({ Books.itemId eq dataAPI.itemId }) {
+                    it[stockStatus] = dataAPI.stockStatus
+                }
+            }
+            logger.info("책 재고 DB 업데이트 성공")
+        }catch (e: Exception){
+            logger.error("오류 발생: ${e.message}")
         }
     }
 

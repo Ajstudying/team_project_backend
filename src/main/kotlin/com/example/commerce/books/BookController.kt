@@ -5,7 +5,9 @@ import com.example.commerce.auth.Auth
 import com.example.commerce.auth.AuthProfile
 import com.example.commerce.order.OrderSales
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.coalesce
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.core.io.ResourceLoader
 import org.springframework.data.domain.Page
@@ -70,6 +72,7 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
             .selectAll()
             .groupBy(b.itemId, o.itemId, b.id, o.id)
             .orderBy(o.bookSales, SortOrder.DESC)
+            .limit(size, offset = (size * page).toLong())
             .map { r ->
                 //선호작품 찾기
                 val bookId = r[b.id].value
@@ -88,6 +91,47 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
                     r[b.customerReviewRank], likedBook = bookLikes,
                 )
             }
+
+        val hasNextPage = min((page + 1) * size.toLong() , books.size.toLong())
+
+        val pageRequest = PageRequest.of(page, hasNextPage.toInt())
+        return@transaction PageImpl(books, pageRequest, books.size.toLong())
+
+//        return@transaction PageImpl(books, PageRequest.of(page, size), books.size.toLong())
+    }
+    //베스트 카테고리
+    @GetMapping("/best/category")
+    fun pagingBestCategory(@RequestParam size: Int, @RequestParam page: Int,  @RequestParam option: String?)
+            : Page<BookBestResponse > = transaction (Connection.TRANSACTION_READ_COMMITTED, readOnly = true){
+        val b = Books
+        val o = OrderSales
+
+        println("$option 베스트 조회")
+        val books =
+            b.join(OrderSales, JoinType.LEFT, onColumn = o.itemId, otherColumn = b.itemId)
+                .slice(b.columns + o.columns)
+                .select { Substring(Books.categoryName, intLiteral(1), intLiteral(13)) like "$option%" }
+//                .groupBy(b.itemId, o.itemId, b.id, o.id)
+                .orderBy(coalesce(o.bookSales, intLiteral(0)), SortOrder.DESC)
+                .limit(size, offset = (size * page).toLong())
+                .map { r ->
+                    //선호작품 찾기
+                    val bookId = r[b.id].value
+                    val bookLikes = transaction {
+                        (b innerJoin LikeBooks)
+                            .select { LikeBooks.bookId eq bookId }
+                            .mapNotNull { r -> LikedBookResponse(
+                                r[LikeBooks.id].value, r[LikeBooks.profileId].value, r[LikeBooks.likes]
+                            ) }
+                    }
+                    BookBestResponse (
+                        r[b.id].value, r[b.publisher], r[b.title], r[b.link], r[b.author], r[b.pubDate],
+                        r[b.description],r[b.isbn], r[b.isbn13], r[b.itemId], r[b.priceSales],
+                        r[b.priceStandard], r[b.stockStatus], r[b.cover], r[b.categoryId],
+                        r[b.categoryName],
+                        r[b.customerReviewRank], likedBook = bookLikes,
+                    )
+                }
 
         return@transaction PageImpl(books, PageRequest.of(page, size), books.size.toLong())
     }

@@ -2,7 +2,6 @@ package com.example.commerce.api
 
 import com.example.commerce.books.ForeignBooks
 import com.example.commerce.books.NewBooks
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -15,7 +14,6 @@ import org.springframework.stereotype.Component
 @Component
 class NewBooksDataApiService(
         private val newBooksClient: NewBooksClient,
-    private val searchBooksClient: SearchBooksClient,
 ) {
     //에러 로그 확인을 위해
     private val logger = LoggerFactory.getLogger(this.javaClass.name)
@@ -30,7 +28,7 @@ class NewBooksDataApiService(
     fun fetchNewDataToday() {
         println("스케줄 실행")
         try {
-            // NewBooksClient를 사용하여 데이터를 가져옵니다.
+            // NewBooksClient 를 사용하여 데이터를 가져옵니다.
             val dataFromExternalAPI: List<BookDataResponse> = newBooksClient.fetch().item
 
             //신간도서
@@ -38,7 +36,7 @@ class NewBooksDataApiService(
             transaction {
                 // 가져온 데이터를 수정하고 데이터베이스에 삽입
                 for (data in dataFromExternalAPI) {
-                    // 이미 존재하는 itemId인지 확인
+                    // 이미 존재하는 itemId 인지 확인
                     val existingBook = NewBooks.select { NewBooks.itemId eq data.itemId }.singleOrNull()
 
                     if (existingBook == null) {
@@ -83,7 +81,7 @@ class NewBooksDataApiService(
             transaction {
                 // 가져온 데이터를 수정하고 데이터베이스에 삽입
                 for (data in foreignDataFromExternalAPI) {
-                    // 이미 존재하는 isbn인지 확인
+                    // 이미 존재하는 isbn 인지 확인
                     val existingBook = ForeignBooks.select { ForeignBooks.isbn eq data.isbn }.singleOrNull()
 
                     if (existingBook == null) {
@@ -133,7 +131,7 @@ class NewBooksDataApiService(
 //                "SearchTarget" to "Book"
 //            )
 //            val response = searchBooksClient.searchFetch(params)
-            val response = searchBooksClient.searchFetch(
+            val response = newBooksClient.searchFetch(
                     "ttbrkddowls01111124001", keyword, "Keyword", size, page,
                     searchTarget, "js", "20131101")
             val totalResult = response.totalResults

@@ -26,48 +26,22 @@ import java.util.*
 
 @RestController
 @RequestMapping("/admin-service")
-class AdminController(private val adminClient: AdminClient) {
+class AdminController(private val adminService: AdminService) {
 
     //디렉토리 파일 경로
     private val ADMIN_FILE_PATH = "files/main"
 
     //오늘의 북 데이터 받아서
     @PostMapping
-    fun todayDataToMyServer(dataAPI: TodayDataResponse): ResponseEntity<Any> {
-        val logger = LoggerFactory.getLogger(javaClass)
-        logger.info("오늘의 책 DB 입력 시작")
+    fun todayDataToMyServer() {
+        println("오늘의 북데이터 가져오기")
+        adminService.fetchTodayData()
+    }
 
-        val currentDateTime = LocalDateTime.now()
-        // 출력 형식을 정의하기 위한 DateTimeFormatter 사용 (선택 사항)
-        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-        val formattedDateTime = currentDateTime.format(formatter)
-
-        return transaction {
-            try {
-                val existingToday = TodayBook.select { TodayBook.itemId eq dataAPI.itemId }.singleOrNull()
-
-                if (existingToday == null) {
-                    TodayBook.insert {
-                        it[cover] = dataAPI.cover
-                        it[title] = dataAPI.title
-                        it[author] = dataAPI.author
-                        it[priceSales] = dataAPI.priceSales
-                        it[todayLetter] = dataAPI.todayLetter
-                        it[itemId] = dataAPI.itemId
-                        it[createdDate] = formattedDateTime
-                    }
-                    logger.info("오늘의 책 DB 입력 성공")
-                    ResponseEntity.status(HttpStatus.OK).build()
-                } else {
-                    logger.info("이미 오늘의 책이 존재합니다.")
-                    ResponseEntity.status(HttpStatus.CONFLICT).build()
-                }
-            } catch (e: Exception) {
-                logger.error("오류 발생: ${e.message}")
-                rollback()
-                ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
-            }
-        }
+    @PostMapping("/stock")
+    fun stockStatusDataToMyServer() {
+        println("책 재고량 가져오기")
+        adminService.fetchStockStatusData()
     }
 
     //해당 날짜의 오늘의 북 데이터 가져오기
