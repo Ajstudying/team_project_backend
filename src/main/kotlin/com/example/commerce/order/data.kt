@@ -34,6 +34,7 @@ data class OrderDeliveryResponse(
         val address: String,        // 기본주소
         val detailAddress: String,  // 상세주소
         val deliveryMemo: String,   // 배송요청사항
+        val cancelMemo: String?,     // 취소 사유
         val orderItems: List<OrderItemResponse2>,  // 주문도서정보
 )
 
@@ -83,4 +84,10 @@ data class OrderAddressRequest(
 data class OrderSalesRequest(
         val itemId: Int,        // book id
         val quantity: Int,  // 수량
+)
+
+data class OrderModityRequest(
+        val orderId: Long,          // 주문 id
+        val orderStatus: String,    // 주문상태
+        val cancelMemo: String,     // 주문 취소 메모
 )

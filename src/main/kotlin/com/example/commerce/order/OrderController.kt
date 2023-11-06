@@ -74,9 +74,14 @@ class OrderController(private val service: OrderService, private val salesServic
                     }
             )
 
-            // 관리시스템으로 주문정보 RabbitMQ로 전송
-            salesService.sendOrder(orderRequest);
-            ResponseEntity.status(HttpStatus.CREATED).body(orderId)
+            try {
+                // 관리시스템으로 주문정보 RabbitMQ로 전송 ==> 배치에서 전달하는것으로 변경
+                salesService.sendOrder(orderRequest);
+                ResponseEntity.status(HttpStatus.CREATED).body(orderId)
+            } catch (e: Exception) {
+                println()
+                ResponseEntity.status(HttpStatus.CREATED).body(orderId)
+            }
         } else {
             println(
                     "주문하기 실패 : 주문번호 : "
@@ -181,7 +186,8 @@ class OrderController(private val service: OrderService, private val salesServic
             (Orders innerJoin OrderAddress)
                     .slice(
                             o.id, o.paymentMethod, o.paymentPrice, o.orderStatus, o.orderDate,
-                            oa.deliveryName, oa.deliveryPhone, oa.postcode, oa.address, oa.detailAddress, oa.deliveryMemo
+                            oa.deliveryName, oa.deliveryPhone, oa.postcode, oa.address, oa.detailAddress, oa.deliveryMemo,
+                            o.cancelMemo
                     )
                     .select { (Orders.profileId eq authProfile.id) and (Orders.id eq orderId) }
                     .first()
@@ -199,6 +205,7 @@ class OrderController(private val service: OrderService, private val salesServic
                                 r[oa.address],
                                 r[oa.detailAddress],
                                 r[oa.deliveryMemo],
+                                r[o.cancelMemo],
                                 booksInfo,
                         )
                     }
@@ -278,18 +285,22 @@ class OrderController(private val service: OrderService, private val salesServic
 
     // 주문 취소 처리
     @Auth
-    @PutMapping("/detail/cancel/{orderId}")
+    @PutMapping("/detail/cancel")
     fun modifyOrderStatus(
-            @PathVariable orderId: Long,
+            @RequestBody request: OrderModityRequest,
             @RequestAttribute authProfile: AuthProfile
     ): ResponseEntity<Any> {
 
         println("<<< OrderController /order/detail/cancel >>>")
         println("입력 값 확인")
-        println("orderId: " + orderId)
+        println("orderId: " + request.orderId)
+
+        val orderId = request.orderId;      // 주문 id
+        val orderCancelStatus = "2";              // 주문취소("2")
+        val reqCancelMemo = request.cancelMemo;    // 주문취소 메모
 
         // 필요한 request 값이 빈값이면 400 : Bad request
-        if (orderId < 1) {
+        if (request.orderId < 1) {
             return ResponseEntity
                     .status(HttpStatus.BAD_REQUEST)
                     .body(mapOf("message" to "orderId are required"))
@@ -305,7 +316,9 @@ class OrderController(private val service: OrderService, private val salesServic
         // 해당 주문건 상태값을 주문취소("2")로 업데이트 처리
         transaction {
             o.update({ o.id eq orderId }) {
-                it[orderStatus] = "2"
+                it[orderStatus] = orderCancelStatus;
+                it[cancelMemo] = reqCancelMemo;
+
             }
         }
 
