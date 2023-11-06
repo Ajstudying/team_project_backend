@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service
 // service - biz-logic
 
 @Service
-class OrderSalesService(@Qualifier("rabbitTemplate2") private val rabbitTemplate: RabbitTemplate,) {
+class OrderSalesService(@Qualifier("rabbitTemplate1") private val rabbitTemplate: RabbitTemplate,) {
     private val mapper = jacksonObjectMapper()
 
     fun createOrder(orderRequest: OrderSales) {

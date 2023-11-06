@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import java.lang.Long.min
 import java.sql.Connection
 
 @RestController
@@ -90,12 +91,12 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
 
         return@transaction PageImpl(books, PageRequest.of(page, size), books.size.toLong())
     }
-
     // 신간 조회
     @GetMapping("/new")
-    fun fetchNew(): List<BookDataResponse> = transaction (Connection.TRANSACTION_READ_COMMITTED, readOnly = true)
+    fun fetchNew(): List<BookDataResponse>
+    = transaction (Connection.TRANSACTION_READ_COMMITTED, readOnly = true)
     {
-        println("신간 조회")
+        println("db에 입력하기 위한 신간 조회")
         val n = NewBooks
         val content = NewBooks.selectAll()
             .orderBy(n.id to SortOrder.DESC)
@@ -112,7 +113,7 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
     @GetMapping("foreign")
     fun fetchForeign() : List<BookDataResponse> = transaction (Connection.TRANSACTION_READ_COMMITTED, readOnly = true)
     {
-        println("외국도서 조회")
+        println("db에 입력하기 위한 외국도서 조회")
         val f = ForeignBooks
         val content = ForeignBooks.selectAll()
             .orderBy(f.id to SortOrder.DESC)
@@ -165,13 +166,7 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
         return@transaction content
     }
 
-    //신간 카테고리 검색
-    @GetMapping("/new/category")
-    fun searchNewCategory(@RequestParam option: String)
-    :List<BookDataResponse> {
-        println("신간카테고리조회")
-        return service.getNewCategory(option)
-    }
+
 
     //카테고리 검색
     @GetMapping("/category")

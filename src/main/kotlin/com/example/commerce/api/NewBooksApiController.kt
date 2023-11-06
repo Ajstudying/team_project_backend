@@ -23,7 +23,7 @@ class NewBooksApiController (private  val newBooksDataApiService: NewBooksDataAp
     : ResponseEntity<Any> {
         println("신간 db 입력")
 
-        newBooksDataApiService.fetchNewDataMonthly()
+        newBooksDataApiService.fetchNewDataToday()
         return ResponseEntity.status(HttpStatus.OK).build()
 
     }
@@ -34,7 +34,7 @@ class NewBooksApiController (private  val newBooksDataApiService: NewBooksDataAp
     : ResponseEntity<Any> {
         println("외국도서신간 db입력")
 
-        newBooksDataApiService.fetchForeignDataMonthly()
+        newBooksDataApiService.fetchForeignDataToday()
         return ResponseEntity.status(HttpStatus.OK).build()
     }
 
@@ -42,7 +42,7 @@ class NewBooksApiController (private  val newBooksDataApiService: NewBooksDataAp
     fun apiSearchData(
         @RequestParam size: Int, @RequestParam page: Int,
         @RequestParam option: String?, @RequestParam keyword: String)
-    : Page<BookDataResponse> {
+    : Page<SearchDataResponse> {
         println(option + "조회")
         println(keyword + "조회")
 
@@ -64,17 +64,16 @@ class NewBooksApiController (private  val newBooksDataApiService: NewBooksDataAp
                 return@transaction searchResultData
             } else {
                 val b = Books
-//                val result = b.selectAll().limit(20).map {
-//                        r -> SearchDataResponse(r[b.publisher], r[b.title], r[b.link],
-//                    r[b.author], r[b.pubDate],
-//                    r[b.description], r[b.isbn], r[b.isbn13], r[b.itemId], r[b.priceSales],
-//                    r[b.priceStandard], r[b.stockStatus], r[b.cover],
-//                    r[b.categoryId], r[b.categoryName], r[b.customerReviewRank], seriesInfo = null)
-//                }
-//                val totalCount = result.count().toLong()
+                val result = b.selectAll().limit(20).map {
+                        r -> SearchDataResponse(r[b.title], r[b.link],
+                    r[b.author], r[b.pubDate], r[b.description], r[b.isbn], r[b.isbn13],
+                        r[b.itemId], r[b.priceSales], r[b.priceStandard], r[b.stockStatus],
+                        r[b.cover], r[b.categoryId], r[b.categoryName], r[b.publisher],
+                        r[b.customerReviewRank], seriesInfo = null)
+                }
+                val totalCount = result.count().toLong()
                 logger.error("검색 결과가 null입니다.")
-//                return@transaction  PageImpl(result, PageRequest.of(page, size), totalCount)
-                return@transaction Page.empty()
+                return@transaction  PageImpl(result, PageRequest.of(page, size), totalCount)
             }
         }
     }

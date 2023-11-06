@@ -8,9 +8,17 @@ import org.springframework.web.bind.annotation.RequestParam
 @FeignClient(name="aladin", url="http://www.aladin.co.kr/ttb/api")
 interface SearchBooksClient {
 
-    @GetMapping("/ItemSearch.aspx?ttbkey=ttbrkddowls01111124001&Query=마음&QueryType=Keyword&MaxResults=5&start=1&SearchTarget=Book&output=js&Version=20131101")
+    @GetMapping("/ItemSearch.aspx")
     fun searchFetch(
-    ): NewBookDataResponse
+            @RequestParam("ttbkey") ttbkey:String,
+            @RequestParam("Query") keyword:String,
+            @RequestParam("QueryType") QueryType:String,
+            @RequestParam("MaxResults") size: Int,
+            @RequestParam("start") page: Int,
+            @RequestParam("SearchTarget") searchTarget: String,
+            @RequestParam("output") output: String,
+            @RequestParam("Version") Version: String,
+    ): SearchResponse
 
 //    @GetMapping("/ItemSearch.aspx")
 //    fun searchFetch(@QueryMap params: Map<String, String>): SearchResponse

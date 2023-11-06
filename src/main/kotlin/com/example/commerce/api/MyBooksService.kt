@@ -2,20 +2,27 @@ package com.example.commerce.api
 
 import com.example.commerce.books.Books
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.data.redis.core.RedisTemplate
+import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.scheduling.annotation.Scheduled
+import org.springframework.stereotype.Component
 
+
+@EnableScheduling
+@Component
 class MyBooksService(
         private val myBooksClient: MyBooksClient,
         private val redisTemplate: RedisTemplate<String, String>) {
 
     private val mapper = jacksonObjectMapper()
 
-    @Scheduled(cron = "0 0 10 * * *")
+
 //    @Scheduled(cron = "0 0 0 1 * ?")
+    @Scheduled(cron = "0 25 10 * * *")
     fun scheduledFetchBooksData() {
         println("--- booksData fetching ---")
         val items = myBooksClient.getBooksData()
@@ -47,7 +54,7 @@ class MyBooksService(
 
     //매주 월요일 실행
 //    @Scheduled(cron = "0 31 17 * * *")
-    @Scheduled(cron = "0 10 10 ? * * *")
+    @Scheduled(cron = "0 30 10 * * *")
     fun scheduledNewBooks() {
         println("신간도서 원래 도서목록에 추가 스케줄 실행")
         //신간 도서 등록
@@ -55,7 +62,7 @@ class MyBooksService(
     }
 
     //    @Scheduled(cron = "0 33 17 * * *")
-    @Scheduled(cron = "0 12 10 ? * * *")
+    @Scheduled(cron = "0 30 10 * * *")
     fun scheduledForeignBooks() {
         println("외국도서 원래 도서목록에 추가 스케줄 실행")
         //신간 도서 등록
@@ -133,6 +140,18 @@ class MyBooksService(
 
         }
 
+    }
+
+    //신간 카테고리 레디스에서 검색
+    fun getNewCategory(option: String ): List<BookDataResponse> {
+        println("신간 레디스에서 조회해오기")
+        val result = redisTemplate.opsForValue().get(option)
+        return if(result != null) {
+            mapper.readValue(result)
+        }else{
+            println("레디스 조회 실패")
+            return listOf()
+        }
     }
 
 
