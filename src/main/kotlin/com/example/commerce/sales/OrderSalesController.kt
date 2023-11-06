@@ -13,7 +13,16 @@ class OrderSalesController(private val orderService: OrderSalesService) {
     fun createOrder(@RequestBody orderRequest: OrderSales) {
         // 요청값 검증
 
-        orderService.createOrder(orderRequest)
+        orderService.sendOrder(orderRequest)
+
+        // 응답값 반환
+    }
+
+    @PostMapping("/send-message")
+    fun sendMessage(@RequestBody message: String) {
+        // 요청값 검증
+
+        orderService.sendMessage(message)
 
         // 응답값 반환
     }
