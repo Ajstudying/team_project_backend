@@ -43,6 +43,7 @@ data class CartItemResponse(
         val priceStandard: Int,
         val priceSales: Int,
         val categoryName: String,
+        val stockStatus: String,     // 재고
         val quantity: Int,           // book 수량
 )
 
