@@ -127,7 +127,7 @@ class CartController(private val service: CartService) {
     fun fetch(@RequestAttribute authProfile: AuthProfile): List<CartItemResponse> =
             transaction(Connection.TRANSACTION_READ_UNCOMMITTED, readOnly = true) {
 
-                println("<<< CartController (/cart) >>>")
+                println("<<< CartController fetch (/cart) >>>")
                 println("-- 입력값 확인 : authProfile.id : " + authProfile.id)
 
                 // object의 이름 alias 주기
@@ -153,6 +153,7 @@ class CartController(private val service: CartService) {
                                     b.priceStandard,
                                     b.priceSales,
                                     b.categoryName,
+                                    b.stockStatus,
                                     ci.quantity
                             )
                             .select { ci.cartId eq c.id }
@@ -167,6 +168,7 @@ class CartController(private val service: CartService) {
                                         r[b.priceStandard],
                                         r[b.priceSales],
                                         r[b.categoryName],
+                                        r[b.stockStatus],
                                         r[ci.quantity]
                                 )
                             }
