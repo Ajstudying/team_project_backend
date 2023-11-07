@@ -9,5 +9,5 @@ interface AdminApiClient {
 
     @GetMapping("/redis-data")
     fun fetchStockStatus(@RequestParam("date") formattedDateTime: String)
-    : StockStatusResponse
+    : List<StockStatusResponse>
 }

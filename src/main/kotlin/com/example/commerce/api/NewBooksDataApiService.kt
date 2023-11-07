@@ -26,7 +26,7 @@ class NewBooksDataApiService(
     //매일 아침 9시 50분
     @Scheduled(cron = "0 50 9 * * *")
     fun fetchNewDataToday() {
-        println("스케줄 실행")
+        println("신간 스케줄 실행")
         try {
             // NewBooksClient 를 사용하여 데이터를 가져옵니다.
             val dataFromExternalAPI: List<BookDataResponse> = newBooksClient.fetch().item

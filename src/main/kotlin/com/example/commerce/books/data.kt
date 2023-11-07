@@ -93,6 +93,13 @@ data class LikedBookResponse (
     val likes: Boolean,
 )
 
+data class AlamBookResponse(
+    val bookItemId: Int,
+    val profileId: Long,
+    val alamDisplay: Boolean,
+    val alam: Boolean,
+    val bookTitle: String,
+)
 
 data class CreateCommentRequest( val new: Int?, val comment: String, val createdDate: Long )
 
@@ -103,3 +110,5 @@ fun CreateCommentRequest.validate() : Boolean {
 data class BookCommentModifyRequest( val comment: String )
 
 data class CreateLikeRequest(val new: Int?, val like: Boolean)
+
+data class CreateAlamRequest(val alamDisplay: Boolean)

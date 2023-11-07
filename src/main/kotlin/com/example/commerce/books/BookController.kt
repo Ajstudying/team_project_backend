@@ -107,6 +107,12 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
         val o = OrderSales
 
         println("$option 베스트 조회")
+
+        val totalItemCount = transaction(Connection.TRANSACTION_READ_COMMITTED, readOnly = true) {
+            val b = Books
+            b.select { Substring(b.categoryName, intLiteral(1), intLiteral(13)) like "$option%" }
+                .count()
+        }
         val books =
             b.join(OrderSales, JoinType.LEFT, onColumn = o.itemId, otherColumn = b.itemId)
                 .slice(b.columns + o.columns)
@@ -133,7 +139,7 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
                     )
                 }
 
-        return@transaction PageImpl(books, PageRequest.of(page, size), books.size.toLong())
+        return@transaction PageImpl(books, PageRequest.of(page, size), totalItemCount)
     }
     // 신간 조회
     @GetMapping("/new")
@@ -510,6 +516,7 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
         return ResponseEntity.ok().build()
     }
 
+    //선호작품 표시
     @Auth
     @PutMapping("/{id}/like")
     fun toggleLike
@@ -523,6 +530,17 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
         } else {
             service.updateLikeRecord(id, authProfile.id, request.like, null)
         }
+    }
+    //알림설정표시
+    @Auth
+    @PutMapping("/{itemId}/alam")
+    fun toggleAlam
+                (@PathVariable itemId: Int,
+                 @RequestBody request: CreateAlamRequest,
+                 @RequestAttribute authProfile: AuthProfile) {
+        println("알림 설정 등록 시작")
+        service.updateAlamRecord(itemId, authProfile.id, request.alamDisplay)
+
     }
 
     //댓글에 답글
@@ -591,6 +609,28 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
         }
         //200 OK
         return ResponseEntity.ok().build()
+    }
+
+    @Auth
+    @GetMapping("/alam")
+    fun getAlamData(@RequestAttribute authProfile: AuthProfile): List<AlamBookResponse>{
+        println("알림 설정 북 조회")
+        val (result, findedAlam) = transaction {
+            val findedAlam =
+                AlamBooks.join(Books, JoinType.INNER, onColumn = AlamBooks.bookItemId, otherColumn = Books.itemId)
+                .select { AlamBooks.profileId eq authProfile.id }
+                .mapNotNull { r -> AlamBookResponse(
+                    r[AlamBooks.bookItemId], authProfile.id, r[AlamBooks.alamDisplay],
+                    r[AlamBooks.alam], r[Books.title],
+                ) }
+            return@transaction Pair(true, findedAlam)
+        }
+
+        if(result){
+            return findedAlam
+        }else{
+            return listOf()
+        }
     }
 
 

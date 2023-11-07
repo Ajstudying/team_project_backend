@@ -249,6 +249,43 @@ class BookService
         }
     }
 
+    //알람 추가/수정
+    fun updateAlamRecord (itemId: Int, profileId: Long, alamDisplay: Boolean): ResponseEntity<Any> {
+        try {
+            // 알림설정이 이미 존재하는지 확인
+            val findAlam = transaction {
+                val table = AlamBooks.bookItemId
+                AlamBooks
+                    .select { (table eq itemId) and (AlamBooks.profileId eq profileId) }
+                    .firstOrNull()
+            } /*  알림설정을 취소할 때 */; if (findAlam != null) {
+                println("$alamDisplay 알림설정 수정")
+                transaction {
+                    val table = AlamBooks.bookItemId
+                    AlamBooks.update({ (table eq itemId) and (AlamBooks.profileId eq profileId) }) {
+                        it[AlamBooks.alamDisplay] = alamDisplay
+                    }
+                }
+            } else {
+                println("$alamDisplay 새로 생긴 알림설정인가")
+                transaction {
+                    AlamBooks.insert {
+                        it[AlamBooks.alamDisplay] = alamDisplay
+                        it[AlamBooks.profileId] = profileId
+                        it[AlamBooks.alam] = false
+                        it[AlamBooks.bookItemId] = itemId
+                    }
+                }
+            }
+
+            // 성공적으로 업데이트나 삽입을 마친 후 OK 응답 반환
+            return ResponseEntity.status(HttpStatus.OK).build()
+        } catch (e: Exception) {
+            // 예외가 발생한 경우 NOT_FOUND 응답 반환
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
+        }
+    }
+
     //신간 도서 댓글 리스트 찾기
 //    fun getNewBooksComments(id: Long): List<BookCommentResponse> {
 //        val c = BookComments

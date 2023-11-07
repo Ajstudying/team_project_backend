@@ -2,6 +2,7 @@ package com.example.commerce.books
 
 import com.example.commerce.auth.Profiles
 import com.example.commerce.books.BookComments.nullable
+import com.example.commerce.books.LikeBooks.nullable
 import jakarta.annotation.PostConstruct
 import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.Database
@@ -61,6 +62,14 @@ object LikeBooks : LongIdTable("like_books"){
     val profileId = reference("profile_id", Profiles)
 }
 
+//알림설정 테이블
+object AlamBooks: LongIdTable("alam_books"){
+    val bookItemId = reference("book_item_id", Books.itemId)
+    val alam = bool("alam").default(false)
+    val alamDisplay = bool("alam_display").default(false)
+    val profileId = reference("profile_id", Profiles)
+}
+
 object NewBooks : LongIdTable("new_books") {
     val publisher = varchar("publisher",32)
     val title = varchar("title", 255)
@@ -110,7 +119,7 @@ class BookTableSetUp(private val database: Database) {
         transaction(database) {
             SchemaUtils.createMissingTablesAndColumns(
                 Books, BookComments, ReplyComments,
-                    NewBooks, ForeignBooks, LikeBooks)
+                    NewBooks, ForeignBooks, LikeBooks, AlamBooks)
         }
     }
 }

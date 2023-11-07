@@ -1,20 +1,29 @@
 package com.example.commerce.admin
 
 import com.example.commerce.auth.Profiles
+import com.example.commerce.books.AlamBooks
 import com.example.commerce.books.Books
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.LoggerFactory
 import org.springframework.amqp.rabbit.core.RabbitTemplate
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
 import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import org.springframework.web.multipart.MultipartFile
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.nio.file.StandardCopyOption
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.*
 
 
 @EnableScheduling
@@ -28,6 +37,9 @@ class AdminService(
     private val mapper = jacksonObjectMapper()
     //에러 로그 확인을 위해
     private val logger = LoggerFactory.getLogger(this.javaClass.name)
+
+    //디렉토리 파일 경로
+    private val ADMIN_FILE_PATH = "files/main"
 
 //    @Scheduled(cron = "0 0 0 * * *")
     @Scheduled(cron = "0 45 9 * * *")
@@ -65,12 +77,52 @@ class AdminService(
         }
     }
 
-    fun fetchImageFileData(){
-        println("메인베너 이미지 배열 가져오기")
+    //메인 베너 이미지 파일 배열
+    fun uploadImageFileData() : ResponseEntity<Any>{
         try{
             val dataAPI: List<MultipartFile> = adminClient.downloadFile()
-        }catch (e: Exception){
+            val dirPath = Paths.get(ADMIN_FILE_PATH)
+            if(!Files.exists(dirPath)) {
+                //폴더 생성
+                Files.createDirectories(dirPath)
+            }
+            val fileList = mutableListOf<Map<String, String?>>()
+
+            //runBlocking, launch 코루틴 처리
+            runBlocking {
+                dataAPI.forEach {
+                    launch {
+                        println("filename: ${it.originalFilename}")
+
+                        val uuidFileName =
+                            "${ UUID.randomUUID() }" +
+                                    ".${ it.originalFilename!!.split(".").last() }"
+
+                        val filePath = dirPath.resolve(uuidFileName)
+
+                        it.inputStream.use {
+                            Files.copy(it, filePath, StandardCopyOption.REPLACE_EXISTING)
+                        }
+                        //파일의 메타데이터를 리스트-맵에 임시저장
+                        fileList.add(mapOf("uuidFileName" to uuidFileName,
+                            "contentType" to it.contentType,
+                            "originalFileName" to it.originalFilename))
+                    }
+                }
+            }
+
+            val result = transaction {
+                val result = MainFiles.batchInsert(fileList){
+                    this[MainFiles.uuidFileName] = it["uuidFileName"] as String
+                    this[MainFiles.originalFileName] = it["originalFileName"] as String
+                    this[MainFiles.contentType] = it["contentType"] as String
+                }
+                return@transaction result
+            }
+            return ResponseEntity.status(HttpStatus.OK).body(result)
+        }catch (e: Exception) {
             logger.error(e.message)
+            return ResponseEntity.status(HttpStatus.CONFLICT).build()
         }
     }
 
@@ -100,34 +152,34 @@ class AdminService(
                 it[this.createdDate] = formattedDateTime
             }.resultedValues ?: return@transaction Pair(false, null)
             val record = result.first()
-            if (profileId != null) {
-                val birth = (Profiles innerJoin HitsTable)
-                    .select { HitsTable.profileId eq profileId }.firstNotNullOf {
-                        it[Profiles.birth]
-                    }.toString()
-
-                val hits = (Profiles innerJoin HitsTable)
-                    .select { HitsTable.profileId eq profileId }
-                    .mapNotNull {
-                            r->
-                        var newBirth = 0
-                        var newGender = 0
-                        if(birth != null) {
-                            newBirth = birth.substring(1, 3).toInt()
-                            newGender = birth.substring(6).toInt()
-                        }
-                        HitsDataResponse(
-                            record[HitsTable.itemId],
-                            r[Profiles.nickname],
-                            birth = newBirth,
-                            r[Profiles.bookmark],
-                            record[HitsTable.hitsCount],
-                            record[HitsTable.createdDate],
-                            gender = newGender,
-                        )
-                    }
-                return@transaction Pair(true, hits.first())
-            } else {
+//            if (profileId != null) {
+//                val birth = (Profiles innerJoin HitsTable)
+//                    .select { HitsTable.profileId eq profileId }.firstNotNullOf {
+//                        it[Profiles.birth]
+//                    }.toString()
+//
+//                val hits = (Profiles innerJoin HitsTable)
+//                    .select { HitsTable.profileId eq profileId }
+//                    .mapNotNull {
+//                            r->
+//                        var newBirth = 0
+//                        var newGender = 0
+//                        if(birth != null) {
+//                            newBirth = birth.substring(1, 3).toInt()
+//                            newGender = birth.substring(6).toInt()
+//                        }
+//                        HitsDataResponse(
+//                            record[HitsTable.itemId],
+//                            r[Profiles.nickname],
+//                            birth = newBirth,
+//                            r[Profiles.bookmark],
+//                            record[HitsTable.hitsCount],
+//                            record[HitsTable.createdDate],
+//                            gender = newGender,
+//                        )
+//                    }
+//                return@transaction Pair(true, hits.first())
+//            } else {
                 return@transaction Pair(true, HitsDataResponse(
                     record[HitsTable.itemId],
                     null,
@@ -138,7 +190,7 @@ class AdminService(
                     null
 
                 ))
-            }
+//            }
 
         }
         //조회수 row 객체 보내기
@@ -159,14 +211,22 @@ class AdminService(
         // 출력 형식을 정의하기 위한 DateTimeFormatter 사용 (선택 사항)
         val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
         val formattedDateTime = currentDateTime.format(formatter)
+        println(formattedDateTime)
 
         try {
             logger.info("책 재고 DB 업데이트 시작")
-            val dataAPI: StockStatusResponse = adminApiClient.fetchStockStatus(formattedDateTime)
-
+            val dataAPI: List<StockStatusResponse> = adminApiClient.fetchStockStatus(formattedDateTime)
             transaction {
-                Books.update({ Books.itemId eq dataAPI.itemId }) {
-                    it[stockStatus] = dataAPI.stockStatus
+                for(data in dataAPI){
+                    val itemId = data.itemId.toInt()
+                    Books.update({ Books.itemId eq itemId }) {
+                        it[stockStatus] = data.stockStatus
+                    }
+                    if(data.stockStatus.toInt() > 0) {
+                        AlamBooks.update({AlamBooks.bookItemId eq itemId}){
+                            it[alam] = true
+                        }
+                    }
                 }
             }
             logger.info("책 재고 DB 업데이트 성공")
