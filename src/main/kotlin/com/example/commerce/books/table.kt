@@ -64,7 +64,7 @@ object LikeBooks : LongIdTable("like_books"){
 
 //알림설정 테이블
 object AlamBooks: LongIdTable("alam_books"){
-    val bookItemId = reference("book_item_id", Books.itemId)
+    val bookItemId = integer("book_item_id")
     val alam = bool("alam").default(false)
     val alamDisplay = bool("alam_display").default(false)
     val profileId = reference("profile_id", Profiles)
