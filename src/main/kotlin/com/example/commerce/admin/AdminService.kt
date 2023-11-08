@@ -152,34 +152,34 @@ class AdminService(
                 it[this.createdDate] = formattedDateTime
             }.resultedValues ?: return@transaction Pair(false, null)
             val record = result.first()
-//            if (profileId != null) {
-//                val birth = (Profiles innerJoin HitsTable)
-//                    .select { HitsTable.profileId eq profileId }.firstNotNullOf {
-//                        it[Profiles.birth]
-//                    }.toString()
-//
-//                val hits = (Profiles innerJoin HitsTable)
-//                    .select { HitsTable.profileId eq profileId }
-//                    .mapNotNull {
-//                            r->
-//                        var newBirth = 0
-//                        var newGender = 0
-//                        if(birth != null) {
-//                            newBirth = birth.substring(1, 3).toInt()
-//                            newGender = birth.substring(6).toInt()
-//                        }
-//                        HitsDataResponse(
-//                            record[HitsTable.itemId],
-//                            r[Profiles.nickname],
-//                            birth = newBirth,
-//                            r[Profiles.bookmark],
-//                            record[HitsTable.hitsCount],
-//                            record[HitsTable.createdDate],
-//                            gender = newGender,
-//                        )
-//                    }
-//                return@transaction Pair(true, hits.first())
-//            } else {
+            if (profileId != null) {
+                val birth = (Profiles innerJoin HitsTable)
+                    .select { HitsTable.profileId eq profileId }.firstNotNullOf {
+                        it[Profiles.birth]
+                    }.toString()
+
+                val hits = (Profiles innerJoin HitsTable)
+                    .select { HitsTable.profileId eq profileId }
+                    .mapNotNull {
+                            r->
+                        var newBirth = 0
+                        var newGender = 0
+                        if(birth != null) {
+                            newBirth = birth.substring(0, 2).toInt()
+                            newGender = birth.substring(6).toInt()
+                        }
+                        HitsDataResponse(
+                            record[HitsTable.itemId],
+                            r[Profiles.nickname],
+                            birth = newBirth,
+                            r[Profiles.bookmark],
+                            record[HitsTable.hitsCount],
+                            record[HitsTable.createdDate],
+                            gender = newGender,
+                        )
+                    }
+                return@transaction Pair(true, hits.first())
+            } else {
                 return@transaction Pair(true, HitsDataResponse(
                     record[HitsTable.itemId],
                     null,
@@ -190,7 +190,7 @@ class AdminService(
                     null
 
                 ))
-//            }
+            }
 
         }
         //조회수 row 객체 보내기
@@ -224,7 +224,15 @@ class AdminService(
                     }
                     if(data.stockStatus.toInt() > 0) {
                         AlamBooks.update({AlamBooks.bookItemId eq itemId}){
-                            it[alam] = true
+                            // 해당 아이템에 대한 alamDisplay의 값을 가져옵니다
+                            val alamDisplayValue = AlamBooks.select { AlamBooks.bookItemId eq itemId }
+                                .singleOrNull()
+                                ?.get(AlamBooks.alamDisplay)
+
+                            // alamDisplay의 값을 확인하고 그에 따라 alam을 업데이트합니다
+                            alamDisplayValue?.let { displayValue ->
+                                it[alam] = displayValue // alamDisplay 값에 따라 alam을 업데이트합니다
+                            }
                         }
                     }
                 }
