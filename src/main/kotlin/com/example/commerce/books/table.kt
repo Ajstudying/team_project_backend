@@ -41,7 +41,7 @@ object BookComments : LongIdTable("book_comments") {
     val newBookId = reference("new_book_id", NewBooks.id).nullable()
     val bookId = reference("book_id", Books.id).nullable()
     val comment = text("comment")
-    val createdDate = long("created_date")
+    val createdTime = long("created_time")
     val profileId = reference("profile_id", Profiles)
 }
 //답글의 테이블

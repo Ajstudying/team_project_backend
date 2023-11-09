@@ -86,7 +86,7 @@ class BookService
                     }
                     BookCommentResponse (
                         r[c.id].value, r[c.comment], r[pf.nickname],
-                        r[c.createdDate], replyComment = commentReplies
+                        r[c.createdTime], replyComment = commentReplies
                     ) }
         }
         //선호작품 찾기
@@ -158,7 +158,7 @@ class BookService
                     }
                     BookCommentResponse (
                         r[c.id].value, r[c.comment], r[pf.nickname],
-                        r[c.createdDate], replyComment = commentReplies
+                        r[c.createdTime], replyComment = commentReplies
                     ) }
         }
         //선호작품 찾기

@@ -77,54 +77,72 @@ class AdminService(
         }
     }
 
-    //메인 베너 이미지 파일 배열
-    fun uploadImageFileData() : ResponseEntity<Any>{
-        try{
-            val dataAPI: List<MultipartFile> = adminClient.downloadFile()
-            val dirPath = Paths.get(ADMIN_FILE_PATH)
-            if(!Files.exists(dirPath)) {
-                //폴더 생성
-                Files.createDirectories(dirPath)
-            }
-            val fileList = mutableListOf<Map<String, String?>>()
-
-            //runBlocking, launch 코루틴 처리
-            runBlocking {
-                dataAPI.forEach {
-                    launch {
-                        println("filename: ${it.originalFilename}")
-
-                        val uuidFileName =
-                            "${ UUID.randomUUID() }" +
-                                    ".${ it.originalFilename!!.split(".").last() }"
-
-                        val filePath = dirPath.resolve(uuidFileName)
-
-                        it.inputStream.use {
-                            Files.copy(it, filePath, StandardCopyOption.REPLACE_EXISTING)
-                        }
-                        //파일의 메타데이터를 리스트-맵에 임시저장
-                        fileList.add(mapOf("uuidFileName" to uuidFileName,
-                            "contentType" to it.contentType,
-                            "originalFileName" to it.originalFilename))
+    fun uploadImageFileData() : ResponseEntity<Any> {
+        try {
+            val dataAPI: List<MainFileResponse> = adminClient.downloadFile()
+            for (data in dataAPI){
+                val result = transaction {
+                    MainFiles.insert {
+                        it[image] = data.image
+                        it[link] = data.link
                     }
                 }
             }
-
-            val result = transaction {
-                val result = MainFiles.batchInsert(fileList){
-                    this[MainFiles.uuidFileName] = it["uuidFileName"] as String
-                    this[MainFiles.originalFileName] = it["originalFileName"] as String
-                    this[MainFiles.contentType] = it["contentType"] as String
-                }
-                return@transaction result
-            }
-            return ResponseEntity.status(HttpStatus.OK).body(result)
+            return ResponseEntity.status(HttpStatus.OK).build()
         }catch (e: Exception) {
             logger.error(e.message)
             return ResponseEntity.status(HttpStatus.CONFLICT).build()
         }
     }
+
+    //메인 베너 이미지 파일 배열
+//    fun uploadImageFileData() : ResponseEntity<Any>{
+//        try{
+//            val dataAPI: List<MultipartFile> = adminClient.downloadFile()
+//            val dirPath = Paths.get(ADMIN_FILE_PATH)
+//            if(!Files.exists(dirPath)) {
+//                //폴더 생성
+//                Files.createDirectories(dirPath)
+//            }
+//            val fileList = mutableListOf<Map<String, String?>>()
+//
+//            //runBlocking, launch 코루틴 처리
+//            runBlocking {
+//                dataAPI.forEach {
+//                    launch {
+//                        println("filename: ${it.originalFilename}")
+//
+//                        val uuidFileName =
+//                            "${ UUID.randomUUID() }" +
+//                                    ".${ it.originalFilename!!.split(".").last() }"
+//
+//                        val filePath = dirPath.resolve(uuidFileName)
+//
+//                        it.inputStream.use {
+//                            Files.copy(it, filePath, StandardCopyOption.REPLACE_EXISTING)
+//                        }
+//                        //파일의 메타데이터를 리스트-맵에 임시저장
+//                        fileList.add(mapOf("uuidFileName" to uuidFileName,
+//                            "contentType" to it.contentType,
+//                            "originalFileName" to it.originalFilename))
+//                    }
+//                }
+//            }
+//
+//            val result = transaction {
+//                val result = MainFiles.batchInsert(fileList){
+//                    this[MainFiles.uuidFileName] = it["uuidFileName"] as String
+//                    this[MainFiles.originalFileName] = it["originalFileName"] as String
+//                    this[MainFiles.contentType] = it["contentType"] as String
+//                }
+//                return@transaction result
+//            }
+//            return ResponseEntity.status(HttpStatus.OK).body(result)
+//        }catch (e: Exception) {
+//            logger.error(e.message)
+//            return ResponseEntity.status(HttpStatus.CONFLICT).build()
+//        }
+//    }
 
     //조회수 레빗 mq
     fun sendHits(hits: HitsDataResponse){

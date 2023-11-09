@@ -451,7 +451,7 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
                 val response = BookComments.insert {
                     it[comment] = createCommentRequest.comment
                     it[profileId] = authProfile.id
-                    it[createdDate] = createCommentRequest.createdDate
+                    it[createdTime] = createCommentRequest.createdDate
                     if (createCommentRequest.new == 0) {
                         it[newBookId] = id
                     } else {
@@ -463,7 +463,7 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
                 val record = response.first()
                 return@transaction SaveBookCommentResponse(
                         record[BookComments.id].value ,record[BookComments.comment],
-                        authProfile.nickname, record[BookComments.createdDate])
+                        authProfile.nickname, record[BookComments.createdTime])
             }
         } catch (e: Exception) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred.")

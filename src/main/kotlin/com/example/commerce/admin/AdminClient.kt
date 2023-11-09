@@ -15,6 +15,6 @@ interface AdminClient {
     : TodayDataResponse
 
     @GetMapping("/with-file")
-    fun downloadFile(): List<MultipartFile>
+    fun downloadFile(): List<MainFileResponse>
 
 }
