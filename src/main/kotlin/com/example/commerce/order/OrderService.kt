@@ -7,6 +7,7 @@ import com.example.commerce.cart.CartItem
 import com.example.commerce.sales.OrderSalesService
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.plus
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.LoggerFactory
@@ -59,7 +60,8 @@ class OrderService(private val database: Database) {
 
                 // 4. cart, cart_item 정보 삭제
                 if (cartId != null) {
-                    deleteCart(cartId.toLong())
+//                    deleteCart(cartId.toLong())
+                    deleteCartItem(cartId.toLong(), orderData)
                 };
 
                 // 5. 주문 판매데이터 업데이트 -> Admin 으로 이동
@@ -220,5 +222,33 @@ class OrderService(private val database: Database) {
 //        return
     }
 
+    // 주문생성 후 장바구니 내역을 삭제한다. (장바구니 도서item 중 주문한 도서만 삭제)
+    fun deleteCartItem(cartId: Long, orderData: OrderCreateRequest) {
+        println("\n<<< OrderService deleteCartItem >>>")
+        println(
+            "request Data ==> " +
+                    ",cartId:" + cartId + ", orderData" + orderData
+        )
+
+        // 주문내역에서 Items만 추출
+        val orderItems = orderData.orderItems
+        val itemIds = orderItems.map { it.itemId }
+
+        // 장바구니 도서 item 삭제
+        // delete FROM cart_item where item_id in (?,?,?)
+        CartItem.deleteWhere { CartItem.itemId inList itemIds }
+
+        val query = CartItem.select {
+            (CartItem.cartId eq cartId)
+        }
+
+        // 장바구니 도서 item이 모두 삭제되었다면 장바구니도 삭제
+        if (query.count() < 1) {
+            // delete FROM cart where id = 1;
+            Cart.deleteWhere { Cart.id eq cartId }
+        }
+
+//        return
+    }
 
 }
