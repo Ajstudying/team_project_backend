@@ -407,12 +407,11 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
     //도서상세
     @GetMapping("/{id}")
     fun selectBook(
-        @PathVariable id: Long, @RequestParam(required = true) profileId: Long?)
+        @PathVariable id: Long)
     : ResponseEntity<BookResponse>{
         println("도세 상세페이지 조회")
-        println(profileId)
 
-        val book = service.getBooks(id, profileId)
+        val book = service.getBooks(id)
 
         return book?.let { ResponseEntity.ok(it) } ?:
         ResponseEntity.status(HttpStatus.NOT_FOUND).build()
@@ -492,10 +491,9 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
     //신간도서상세
     @GetMapping("/new/{id}")
     fun selectNewBook(
-        @PathVariable id: Long,  @RequestParam(required = true) profileId: Long?)
+        @PathVariable id: Long)
     : ResponseEntity<BookResponse>{
-
-        val book = service.getNewBook(id, profileId)
+        val book = service.getNewBook(id)
 
         return book?.let { ResponseEntity.ok(it) } ?:
         ResponseEntity.status(HttpStatus.NOT_FOUND).build()

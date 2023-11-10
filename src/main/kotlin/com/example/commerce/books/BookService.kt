@@ -54,7 +54,7 @@ class BookService
     }
 
     //신간 도서 상세 찾기
-    fun getNewBook(id: Long, profileId: Long?): BookResponse? {
+    fun getNewBook(id: Long): BookResponse? {
         val n = NewBooks
         val c = BookComments
         val pf = Profiles
@@ -124,7 +124,7 @@ class BookService
 
 
     //도서 상세 조회
-    fun getBooks (id: Long, profileId: Long?) : BookResponse? {
+    fun getBooks (id: Long) : BookResponse? {
         val b = Books
         val c = BookComments
         val pf = Profiles
@@ -190,7 +190,7 @@ class BookService
         println(itemId)
         if(itemId != null){
             //조회수 테이블 만들기
-            adminService.sendRabbitData(itemId, profileId)
+            adminService.sendRabbitData(itemId)
         }
 
         return book

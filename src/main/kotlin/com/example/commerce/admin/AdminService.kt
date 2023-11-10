@@ -151,7 +151,7 @@ class AdminService(
         rabbitTemplate2.convertAndSend("hits-queue", mapper.writeValueAsString(hits))
     }
 
-    fun sendRabbitData(itemId:Int, profileId:Long?){
+    fun sendRabbitData(itemId:Int){
 
         val currentDateTime = LocalDateTime.now()
         // 출력 형식을 정의하기 위한 DateTimeFormatter 사용 (선택 사항)
@@ -170,34 +170,6 @@ class AdminService(
                 it[this.createdDate] = formattedDateTime
             }.resultedValues ?: return@transaction Pair(false, null)
             val record = result.first()
-            if (profileId != null) {
-                val birth = (Profiles innerJoin HitsTable)
-                    .select { HitsTable.profileId eq profileId }.firstNotNullOf {
-                        it[Profiles.birth]
-                    }.toString()
-
-                val hits = (Profiles innerJoin HitsTable)
-                    .select { HitsTable.profileId eq profileId }
-                    .mapNotNull {
-                            r->
-                        var newBirth = 0
-                        var newGender = 0
-                        if(birth != null) {
-                            newBirth = birth.substring(0, 2).toInt()
-                            newGender = birth.substring(6).toInt()
-                        }
-                        HitsDataResponse(
-                            record[HitsTable.itemId],
-                            r[Profiles.nickname],
-                            birth = newBirth,
-                            r[Profiles.bookmark],
-                            record[HitsTable.hitsCount],
-                            record[HitsTable.createdDate],
-                            gender = newGender,
-                        )
-                    }
-                return@transaction Pair(true, hits.first())
-            } else {
                 return@transaction Pair(true, HitsDataResponse(
                     record[HitsTable.itemId],
                     null,
@@ -208,7 +180,6 @@ class AdminService(
                     null
 
                 ))
-            }
 
         }
         //조회수 row 객체 보내기
