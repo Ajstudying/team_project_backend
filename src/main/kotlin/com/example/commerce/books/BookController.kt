@@ -3,6 +3,7 @@ package com.example.commerce.books
 import com.example.commerce.api.BookDataResponse
 import com.example.commerce.auth.Auth
 import com.example.commerce.auth.AuthProfile
+import com.example.commerce.auth.Profiles
 import com.example.commerce.order.OrderSales
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.coalesce
@@ -215,8 +216,6 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
         return@transaction content
     }
 
-
-
     //카테고리 검색
     @GetMapping("/category")
     fun searchCategory(
@@ -414,6 +413,77 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
         println(profileId)
 
         val book = service.getBooks(id, profileId)
+
+        return book?.let { ResponseEntity.ok(it) } ?:
+        ResponseEntity.status(HttpStatus.NOT_FOUND).build()
+    }
+
+    //도서상세
+    @GetMapping("/itemId")
+    fun selectSearchBook(
+            @RequestParam itemId: Int)
+            : ResponseEntity<BookResponse>{
+        println("검색도서 상세페이지 조회")
+
+        val b = Books
+        val c = BookComments
+        val pf = Profiles
+        val r = ReplyComments
+        val selectedBookId = transaction {
+            val selectedBook = b.select { b.itemId eq itemId }.singleOrNull()
+            val bookId = selectedBook?.get(b.id)?.value
+            return@transaction bookId
+        }
+        //답글 찾기
+        val reply : List<ReplyCommentResponse> = transaction {
+            (r innerJoin c).join (pf, JoinType.LEFT, onColumn = pf.id, otherColumn = r.profileId)
+                    .select { (r.bookId eq selectedBookId) and (r.bookCommentId eq c.id) }
+                    .orderBy(r.id to SortOrder.DESC)
+                    .mapNotNull { row ->
+                        ReplyCommentResponse(
+                                row[r.id].value, row[r.comment], row[pf.nickname]
+                                , row[r.createdDate], row[c.id].value
+                        )
+                    }
+        }
+        println(reply+"replyComments ------------------")
+        //댓글 찾기
+        val comments: List<BookCommentResponse> = transaction {
+            (c innerJoin pf leftJoin r)
+                    .slice(c.columns + c.id + pf.id + pf.nickname + r.columns)
+                    .select{ (c.bookId eq selectedBookId) }
+                    .orderBy(c.id to SortOrder.DESC)
+                    .mapNotNull { r ->
+                        val commentReplies = reply.filter { replyComment ->
+                            replyComment.parentId == r[c.id].value
+                        }
+                        BookCommentResponse (
+                                r[c.id].value, r[c.comment], r[pf.nickname],
+                                r[c.createdTime], replyComment = commentReplies
+                        ) }
+        }
+        //선호작품 찾기
+        val likes = transaction {
+            (LikeBooks innerJoin pf)
+                    .select { LikeBooks.bookId eq selectedBookId }
+                    .mapNotNull { r -> LikedBookResponse(
+                            r[LikeBooks.id].value, r[pf.id].value, r[LikeBooks.likes]
+                    ) }
+        }
+        println("책찾기")
+        val book = transaction {
+            b.select { (b.id eq selectedBookId)}
+                    .mapNotNull { r ->
+                        //집계 함수식의 별칭 설정
+                        val commentCount = comments.size.toLong()
+                        BookResponse(
+                                r[b.id].value, r[b.publisher], r[b.title], r[b.link], r[b.author], r[b.pubDate],
+                                r[b.description], r[b.isbn], r[b.isbn13], r[b.itemId], r[b.priceSales],
+                                r[b.priceStandard], r[b.stockStatus], r[b.cover],
+                                r[b.categoryId], r[b.categoryName], commentCount = commentCount,
+                                bookComment = comments, likedBook = likes
+                        ) }
+                    .singleOrNull() }
 
         return book?.let { ResponseEntity.ok(it) } ?:
         ResponseEntity.status(HttpStatus.NOT_FOUND).build()
