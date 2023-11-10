@@ -62,8 +62,8 @@ class OrderService(private val database: Database) {
                     deleteCart(cartId.toLong())
                 };
 
-                // 5. 주문 판매데이터 업데이트
-                updateOrderSales(resultOrderItems)
+                // 5. 주문 판매데이터 업데이트 -> Admin 으로 이동
+//                updateOrderSales(resultOrderItems)
 
                 resultOrderId = orderId
             } catch (e: Exception) {
@@ -160,48 +160,48 @@ class OrderService(private val database: Database) {
     }
 
     // 주문 판매수량 업데이트
-    fun updateOrderSales(orderItemStock: List<OrderSalesRequest>) {
-        println("\n<<< OrderService createOrderAddress >>>")
-        println("request Data (주문 항목) ==> ")
-        println("주문 항목:")
-
-        for (reqItem in orderItemStock) {
-            println("도서 ID: ${reqItem.itemId}, 수량: ${reqItem.quantity}")
-
-            // select id from order_stock where item_id = 1;
-            val query = OrderSales.select {
-                (OrderSales.itemId eq reqItem.itemId)
-            }
-
-            if (query.count() > 0) {
-                // 이미 해당 도서의 판매정보가 등록되어 있으면 기존 판매수에 수량을 더한다
-                // SQL
-                // UPDATE order_stock SET book_stock = book_stock + 2 WHERE item_id = 1;
-                OrderSales.update({ OrderSales.itemId eq reqItem.itemId }) {
-                    it[bookSales] = OrderSales.bookSales + reqItem.quantity.toInt()
-                }
-            } else {
-                // 신규이면 새로 등록한다.
-                // SQL
-                // select id from books where item_id = :itemId;
-                val bookId = Books.select {
-                    (Books.itemId eq reqItem.itemId)
-                }.first()
-                    .let { it[Books.id] }
-
-                // INSERT INTO order_stock( book_stock, item_id, status, book_id)
-                // values (?, ?, ?,  (select id from books where item_id =?))
-                OrderSales.insert {
-                    it[OrderSales.bookSales] = reqItem.quantity
-                    it[OrderSales.itemId] = reqItem.itemId
-                    it[OrderSales.status] = "1"
-                    it[OrderSales.bookId] = bookId
-
-                } get OrderSales.id
-            }
-
-        }
-    }
+//    fun updateOrderSales(orderItemStock: List<OrderSalesRequest>) {
+//        println("\n<<< OrderService createOrderAddress >>>")
+//        println("request Data (주문 항목) ==> ")
+//        println("주문 항목:")
+//
+//        for (reqItem in orderItemStock) {
+//            println("도서 ID: ${reqItem.itemId}, 수량: ${reqItem.quantity}")
+//
+//            // select id from order_stock where item_id = 1;
+//            val query = OrderSales.select {
+//                (OrderSales.itemId eq reqItem.itemId)
+//            }
+//
+//            if (query.count() > 0) {
+//                // 이미 해당 도서의 판매정보가 등록되어 있으면 기존 판매수에 수량을 더한다
+//                // SQL
+//                // UPDATE order_stock SET book_stock = book_stock + 2 WHERE item_id = 1;
+//                OrderSales.update({ OrderSales.itemId eq reqItem.itemId }) {
+//                    it[bookSales] = OrderSales.bookSales + reqItem.quantity.toInt()
+//                }
+//            } else {
+//                // 신규이면 새로 등록한다.
+//                // SQL
+//                // select id from books where item_id = :itemId;
+//                val bookId = Books.select {
+//                    (Books.itemId eq reqItem.itemId)
+//                }.first()
+//                    .let { it[Books.id] }
+//
+//                // INSERT INTO order_stock( book_stock, item_id, status, book_id)
+//                // values (?, ?, ?,  (select id from books where item_id =?))
+//                OrderSales.insert {
+//                    it[OrderSales.bookSales] = reqItem.quantity
+//                    it[OrderSales.itemId] = reqItem.itemId
+//                    it[OrderSales.status] = "1"
+//                    it[OrderSales.bookId] = bookId
+//
+//                } get OrderSales.id
+//            }
+//
+//        }
+//    }
 
     // 주문생성 후 장바구니 내역을 삭제한다.
     fun deleteCart(cartId: Long) {

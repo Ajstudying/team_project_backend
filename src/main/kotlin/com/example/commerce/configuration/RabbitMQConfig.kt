@@ -33,6 +33,9 @@ class RabbitMQConfig {
     fun connectionFactory1(): ConnectionFactory {
         val connectionFactory = CachingConnectionFactory()
         connectionFactory.setHost("192.168.100.204")
+//        connectionFactory.setHost("192.168.100.177")
+//        connectionFactory.setHost("192.168.100.36")
+//        connectionFactory.setHost("192.168.100.155")
         connectionFactory.port = 5672
         connectionFactory.username = "rabbit"
         connectionFactory.setPassword("password1234!")
@@ -70,11 +73,11 @@ class RabbitMQConfig {
     fun rabbitAdmin1(connectionFactory1: ConnectionFactory): RabbitAdmin {
         return RabbitAdmin(connectionFactory1)
     }
+
     @Bean
-    fun rabbitAdmin2(connectionFactory2: ConnectionFactory) : RabbitAdmin {
+    fun rabbitAdmin2(connectionFactory2: ConnectionFactory): RabbitAdmin {
         return RabbitAdmin(connectionFactory2)
     }
-
 
 
     @Bean

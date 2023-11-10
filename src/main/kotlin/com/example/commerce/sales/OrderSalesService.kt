@@ -30,8 +30,8 @@ class OrderSalesService(@Qualifier("rabbitTemplate1") private val rabbitTemplate
     }
 
     fun sendMessage(message: String) {
-        println("RabbitMQ ==> create-order")
-        rabbitTemplate.convertAndSend("create-order", mapper.writeValueAsString(message))
-        println("RabbitMQ ==> create-order end.....")
+        println("RabbitMQ ==> ex-queue")
+        rabbitTemplate.convertAndSend("ex-queue", mapper.writeValueAsString(message))
+        println("RabbitMQ ==> ex-queue end.....")
     }
 }

@@ -91,23 +91,23 @@ object OrderAddress : Table("order_address") {
 }
 
 // 주문 판매 정보(도서별 판매량)
-object OrderSales : Table("order_sales") {
-    val id = long("id").autoIncrement().uniqueIndex()
-
-    // 도서별 판매수
-    val bookSales = integer("book_sales")
-
-    // 도서 Item Id
-    val itemId = integer("item_id")
-
-    val status = varchar("status", 1)
-
-    // 도서 Id
-    var bookId = reference("book_id", Books.id)
-
-    // key
-    override val primaryKey = PrimaryKey(OrderSales.id)
-}
+//object OrderSales : Table("order_sales") {
+//    val id = long("id").autoIncrement().uniqueIndex()
+//
+//    // 도서별 판매수
+//    val bookSales = integer("book_sales")
+//
+//    // 도서 Item Id
+//    val itemId = integer("item_id")
+//
+//    val status = varchar("status", 1)
+//
+//    // 도서 Id
+//    var bookId = reference("book_id", Books.id)
+//
+//    // key
+//    override val primaryKey = PrimaryKey(OrderSales.id)
+//}
 
 //테이블 생성
 @Configuration
@@ -115,7 +115,7 @@ class OrderTableSetUp(private val database: Database) {
     @PostConstruct
     fun migrateSchema() {
         transaction(database) {
-            SchemaUtils.createMissingTablesAndColumns(Orders, OrderItem, OrderAddress, OrderSales)
+            SchemaUtils.createMissingTablesAndColumns(Orders, OrderItem, OrderAddress)
         }
     }
 }

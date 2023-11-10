@@ -15,8 +15,8 @@ import org.springframework.http.HttpStatus.Series
 
 //책 테이블
 object Books : LongIdTable("books") {
-//    val id = long("id").autoIncrement().uniqueIndex()
-    val publisher = varchar("publisher",32)
+    //    val id = long("id").autoIncrement().uniqueIndex()
+    val publisher = varchar("publisher", 32)
     val title = varchar("title", 512)
     val link = varchar("link", 512)
     val author = varchar("author", 512)
@@ -44,6 +44,7 @@ object BookComments : LongIdTable("book_comments") {
     val createdDate = long("created_date")
     val profileId = reference("profile_id", Profiles)
 }
+
 //답글의 테이블
 object ReplyComments : LongIdTable("reply_comments") {
     val newBookId = reference("new_book_id", NewBooks.id).nullable()
@@ -55,7 +56,7 @@ object ReplyComments : LongIdTable("reply_comments") {
 }
 
 //선호작품 테이블
-object LikeBooks : LongIdTable("like_books"){
+object LikeBooks : LongIdTable("like_books") {
     val newBookId = reference("new_book_id", NewBooks.id).nullable()
     val bookId = reference("book_id", Books.id).nullable()
     val likes = bool("likes").default(false)
@@ -63,15 +64,15 @@ object LikeBooks : LongIdTable("like_books"){
 }
 
 //알림설정 테이블
-object AlamBooks: LongIdTable("alam_books"){
-    val bookItemId = reference("book_item_id", Books.itemId)
+object AlamBooks : LongIdTable("alam_books") {
+    val bookItemId = integer("book_item_id")
     val alam = bool("alam").default(false)
     val alamDisplay = bool("alam_display").default(false)
     val profileId = reference("profile_id", Profiles)
 }
 
 object NewBooks : LongIdTable("new_books") {
-    val publisher = varchar("publisher",32)
+    val publisher = varchar("publisher", 32)
     val title = varchar("title", 255)
     val link = varchar("link", 512)
     val author = varchar("author", 512)
@@ -90,7 +91,7 @@ object NewBooks : LongIdTable("new_books") {
 }
 
 object ForeignBooks : LongIdTable("foreign_books") {
-    val publisher = varchar("publisher",32)
+    val publisher = varchar("publisher", 32)
     val title = varchar("title", 255)
     val link = varchar("link", 512)
     val author = varchar("author", 512)
@@ -109,8 +110,6 @@ object ForeignBooks : LongIdTable("foreign_books") {
 }
 
 
-
-
 //테이블 생성
 @Configuration
 class BookTableSetUp(private val database: Database) {
@@ -119,7 +118,8 @@ class BookTableSetUp(private val database: Database) {
         transaction(database) {
             SchemaUtils.createMissingTablesAndColumns(
                 Books, BookComments, ReplyComments,
-                    NewBooks, ForeignBooks, LikeBooks, AlamBooks)
+                NewBooks, ForeignBooks, LikeBooks, AlamBooks
+            )
         }
     }
 }
