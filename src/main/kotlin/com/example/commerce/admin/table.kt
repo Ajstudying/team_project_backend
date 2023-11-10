@@ -26,9 +26,8 @@ object HitsTable: LongIdTable("hits_table"){
 }
 
 object MainFiles : LongIdTable("main_files"){
-    val originalFileName = varchar("original_file_name", 200)
-    val uuidFileName = varchar("uuid", 50).uniqueIndex()
-    val contentType = varchar("content_type", 100)
+    val image = varchar("image", 512)
+    val link = varchar("link", 512)
 }
 
 //테이블 생성

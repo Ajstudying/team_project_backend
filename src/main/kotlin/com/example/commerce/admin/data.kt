@@ -1,5 +1,8 @@
 package com.example.commerce.admin
 
+import com.example.commerce.admin.MainFiles.uniqueIndex
+import org.springframework.web.multipart.MultipartFile
+
 data class TodayDataResponse(
     val cover: String,
     val title: String,
@@ -32,11 +35,10 @@ data class HitsDataResponse(
 )
 
 data class MainFileResponse(
-    val id: Long,
-    val uuidFileName: String,
-    val originalFileName: String,
-    val contentType: String,
+    val image: String,
+    val link :String,
 )
+
 data class StockStatusResponse(
     val itemId: String,
     val stockStatus: String,

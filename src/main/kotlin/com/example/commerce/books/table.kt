@@ -41,7 +41,7 @@ object BookComments : LongIdTable("book_comments") {
     val newBookId = reference("new_book_id", NewBooks.id).nullable()
     val bookId = reference("book_id", Books.id).nullable()
     val comment = text("comment")
-    val createdDate = long("created_date")
+    val createdTime = long("created_time")
     val profileId = reference("profile_id", Profiles)
 }
 
@@ -64,7 +64,11 @@ object LikeBooks : LongIdTable("like_books") {
 }
 
 //알림설정 테이블
+<<<<<<< HEAD
 object AlamBooks : LongIdTable("alam_books") {
+=======
+object AlamBooks: LongIdTable("alam_books"){
+>>>>>>> master
     val bookItemId = integer("book_item_id")
     val alam = bool("alam").default(false)
     val alamDisplay = bool("alam_display").default(false)
