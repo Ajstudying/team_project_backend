@@ -64,11 +64,7 @@ object LikeBooks : LongIdTable("like_books") {
 }
 
 //알림설정 테이블
-<<<<<<< HEAD
-object AlamBooks : LongIdTable("alam_books") {
-=======
 object AlamBooks: LongIdTable("alam_books"){
->>>>>>> master
     val bookItemId = integer("book_item_id")
     val alam = bool("alam").default(false)
     val alamDisplay = bool("alam_display").default(false)
