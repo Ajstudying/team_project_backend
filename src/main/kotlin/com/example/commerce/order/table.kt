@@ -27,7 +27,11 @@ object Orders : Table("orders") {
     // 주문상태 (1: 완료, 2:취소)
     val orderStatus = varchar("order_status", 1)
 
+    // 주문취소사유
     val cancelMemo = varchar("cancel_memo", 50).nullable();
+
+    // 판매정보 전송 상태 (0:미전송, 1: 전송)
+    val batchStatus = varchar("batch_status", 1).nullable();
 
     val profileId = reference("profile_id", Profiles)
 
