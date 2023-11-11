@@ -14,6 +14,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.scheduling.annotation.Async
+import org.springframework.scheduling.annotation.EnableAsync
 import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
@@ -28,6 +30,7 @@ import java.util.*
 
 @EnableScheduling
 @Component
+@EnableAsync
 class AdminService(
     private val adminClient: AdminClient,
     private val adminApiClient: AdminApiClient,
@@ -147,10 +150,11 @@ class AdminService(
     //조회수 레빗 mq
     fun sendHits(hits: HitsDataResponse){
         println("이제 진짜 레빗으로 가요")
-
         rabbitTemplate2.convertAndSend("hits-queue", mapper.writeValueAsString(hits))
+
     }
 
+    @Async
     fun sendRabbitData(itemId:Int){
 
         val currentDateTime = LocalDateTime.now()
@@ -188,7 +192,12 @@ class AdminService(
             val hitsDataResponse = newHits as? HitsDataResponse
             if(hitsDataResponse != null){
                 println(hitsDataResponse)
-                sendHits(hitsDataResponse)
+                try {
+                    sendHits(hitsDataResponse)
+                }catch (e: Exception){
+                    println("레빗 전송 오류")
+                }
+
             }
 
         }

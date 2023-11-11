@@ -190,7 +190,11 @@ class BookService
         println(itemId)
         if(itemId != null){
             //조회수 테이블 만들기
-            adminService.sendRabbitData(itemId)
+            try {
+                adminService.sendRabbitData(itemId)
+            }catch (e:Exception) {
+                println("레빗 오류로 인해 조회 안되는 기능을 막는다.")
+            }
         }
 
         return book
