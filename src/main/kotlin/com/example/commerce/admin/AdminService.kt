@@ -172,13 +172,8 @@ class AdminService(
             val record = result.first()
                 return@transaction Pair(true, HitsDataResponse(
                     record[HitsTable.itemId],
-                    null,
-                    null,
-                    null,
                     record[HitsTable.hitsCount],
                     record[HitsTable.createdDate],
-                    null
-
                 ))
 
         }

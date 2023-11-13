@@ -26,12 +26,8 @@ data class TodayLetterResponse(
 
 data class HitsDataResponse(
     val itemId: Int,
-    val nickname: String?,
-    val birth: Int?,
-    val bookmark: String?,
     val hitsCount: Long,
     val createDate: String,
-    val gender: Int?,
 )
 
 data class MainFileResponse(
