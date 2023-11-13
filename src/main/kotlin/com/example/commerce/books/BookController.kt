@@ -92,10 +92,34 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
                 )
             }
 
-        val hasNextPage = min((page + 1) * size.toLong() , books.size.toLong())
+        val finalBooks = books.ifEmpty {
+            Books.selectAll()
+                    .limit(size, offset = (size * page).toLong())
+                    .map { r ->
+                //선호작품 찾기
+                val bookId = r[b.id].value
+                val bookLikes = transaction {
+                    (b innerJoin LikeBooks)
+                            .select { LikeBooks.bookId eq bookId }
+                            .mapNotNull { r ->
+                                LikedBookResponse(
+                                        r[LikeBooks.id].value, r[LikeBooks.profileId].value, r[LikeBooks.likes]
+                                )
+                            }
+                }
+                BookBestResponse(
+                        r[b.id].value, r[b.publisher], r[b.title], r[b.link], r[b.author], r[b.pubDate],
+                        r[b.description], r[b.isbn], r[b.isbn13], r[b.itemId], r[b.priceSales],
+                        r[b.priceStandard], r[b.stockStatus], r[b.cover], r[b.categoryId],
+                        r[b.categoryName],
+                        r[b.customerReviewRank], likedBook = bookLikes,
+                )
+            }
+        }
+        val hasNextPage = min((page + 1) * size.toLong() , finalBooks.size.toLong())
 
         val pageRequest = PageRequest.of(page, hasNextPage.toInt())
-        return@transaction PageImpl(books, pageRequest, books.size.toLong())
+        return@transaction PageImpl(finalBooks, pageRequest, finalBooks.size.toLong())
 
 //        return@transaction PageImpl(books, PageRequest.of(page, size), books.size.toLong())
     }
