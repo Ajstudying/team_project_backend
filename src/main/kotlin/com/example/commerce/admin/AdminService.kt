@@ -198,7 +198,7 @@ class AdminService(
         }
     }
 
-    @Scheduled(cron = "0 45 9 * * *")
+    @Scheduled(cron = "0 09 12 * * *")
     fun fetchStockStatusData() {
         val currentDateTime = LocalDateTime.now()
         // 출력 형식을 정의하기 위한 DateTimeFormatter 사용 (선택 사항)
@@ -216,15 +216,15 @@ class AdminService(
                         it[stockStatus] = data.stockStatus
                     }
                     if(data.stockStatus.toInt() > 0) {
-                        AlamBooks.update({AlamBooks.bookItemId eq itemId}){
-                            // 해당 아이템에 대한 alamDisplay의 값을 가져옵니다
-                            val alamDisplayValue = AlamBooks.select { AlamBooks.bookItemId eq itemId }
-                                .singleOrNull()
-                                ?.get(AlamBooks.alamDisplay)
+                        // alamDisplay의 값을 확인하고 그에 따라 alam을 업데이트합니다
+                        val alamDisplayValue = AlamBooks.select { AlamBooks.bookItemId eq itemId }
+                            .singleOrNull()
+                            ?.get(AlamBooks.alamDisplay)
 
-                            // alamDisplay의 값을 확인하고 그에 따라 alam을 업데이트합니다
-                            alamDisplayValue?.let { displayValue ->
-                                it[alam] = displayValue // alamDisplay 값에 따라 alam을 업데이트합니다
+                        println("알람 디스플레이 값 $alamDisplayValue")
+                        alamDisplayValue?.let { displayValue ->
+                            AlamBooks.update({AlamBooks.bookItemId eq itemId}){
+                                it[AlamBooks.alam] = displayValue // alamDisplay 값에 따라 alam을 업데이트합니다
                             }
                         }
                     }
