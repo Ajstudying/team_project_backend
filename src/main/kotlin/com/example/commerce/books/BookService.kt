@@ -268,6 +268,7 @@ class BookService
                     val table = AlamBooks.bookItemId
                     AlamBooks.update({ (table eq itemId) and (AlamBooks.profileId eq profileId) }) {
                         it[AlamBooks.alamDisplay] = alamDisplay
+                        it[AlamBooks.alam] = alamDisplay
                     }
                 }
             } else {

@@ -50,6 +50,67 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
 
         )}
     }
+
+    @GetMapping("/best-list")
+    fun getBestList()
+            : List<BookBestResponse > = transaction (Connection.TRANSACTION_READ_COMMITTED, readOnly = true){
+
+                println("레디스에 넣을 베스트셀러 목록 조회")
+        val b = Books
+        val o = OrderSales
+        val books =
+                b.join(OrderSales, JoinType.INNER, onColumn = o.itemId, otherColumn = b.itemId)
+                        .slice(b.columns + o.columns)
+                        .selectAll()
+                        .groupBy(b.itemId, o.itemId, b.id, o.id)
+                        .orderBy(o.bookSales, SortOrder.DESC)
+                        .map { r ->
+                            //선호작품 찾기
+                            val bookId = r[b.id].value
+                            val bookLikes = transaction {
+                                (b innerJoin LikeBooks)
+                                        .select { LikeBooks.bookId eq bookId }
+                                        .mapNotNull { r -> LikedBookResponse(
+                                                r[LikeBooks.id].value, r[LikeBooks.profileId].value, r[LikeBooks.likes]
+                                        ) }
+                            }
+                            BookBestResponse (
+                                    r[b.id].value, r[b.publisher], r[b.title], r[b.link], r[b.author], r[b.pubDate],
+                                    r[b.description],r[b.isbn], r[b.isbn13], r[b.itemId], r[b.priceSales],
+                                    r[b.priceStandard], r[b.stockStatus], r[b.cover], r[b.categoryId],
+                                    r[b.categoryName],
+                                    r[b.customerReviewRank], likedBook = bookLikes,
+                            )
+                        }
+
+        val finalBooks = books.ifEmpty {
+            Books.selectAll()
+                    .map { r ->
+                        //선호작품 찾기
+                        val bookId = r[b.id].value
+                        val bookLikes = transaction {
+                            (b innerJoin LikeBooks)
+                                    .select { LikeBooks.bookId eq bookId }
+                                    .mapNotNull { r ->
+                                        LikedBookResponse(
+                                                r[LikeBooks.id].value, r[LikeBooks.profileId].value, r[LikeBooks.likes]
+                                        )
+                                    }
+                        }
+                        BookBestResponse(
+                                r[b.id].value, r[b.publisher], r[b.title], r[b.link], r[b.author], r[b.pubDate],
+                                r[b.description], r[b.isbn], r[b.isbn13], r[b.itemId], r[b.priceSales],
+                                r[b.priceStandard], r[b.stockStatus], r[b.cover], r[b.categoryId],
+                                r[b.categoryName],
+                                r[b.customerReviewRank], likedBook = bookLikes,
+                        )
+                    }
+        }
+
+        return@transaction finalBooks
+
+    }
+
     @GetMapping("/best")
     fun pagingBest(@RequestParam size: Int, @RequestParam page: Int)
     : Page<BookBestResponse > = transaction (Connection.TRANSACTION_READ_COMMITTED, readOnly = true){

@@ -1,5 +1,7 @@
 package com.example.commerce.api
 
+import com.example.commerce.books.BookBestResponse
+import com.example.commerce.books.BookListResponse
 import com.example.commerce.books.Books
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.selectAll
@@ -48,5 +50,7 @@ interface MyBooksClient {
     @GetMapping("/new-list")
     fun searchNewCategory(@RequestParam keyword: String): List<BookDataResponse>
 
+    @GetMapping("/best-list")
+    fun bestFetch(): List<BookBestResponse>
 
 }

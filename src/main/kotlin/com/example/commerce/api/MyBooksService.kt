@@ -1,5 +1,6 @@
 package com.example.commerce.api
 
+import com.example.commerce.books.BookBestResponse
 import com.example.commerce.books.Books
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -22,7 +23,7 @@ class MyBooksService(
 
 
 //    @Scheduled(cron = "0 0 0 1 * ?")
-    @Scheduled(cron = "0 25 10 * * *")
+    @Scheduled(cron = "30 0 10 ? * MON")
     fun scheduledFetchBooksData() {
         println("--- booksData fetching ---")
         val items = myBooksClient.getBooksData()
@@ -52,9 +53,20 @@ class MyBooksService(
 //        }
     }
 
+    @Scheduled(cron = "30 0 10 ? * MON")
+    fun scheduledFetchBestBooksData() {
+        println("--- bestData fetching ---")
+        val items = myBooksClient.bestFetch()
+
+        //결과값 저장
+        redisTemplate.delete("best-list")
+        redisTemplate.opsForValue().set("best-list", mapper.writeValueAsString(items))
+
+    }
+
     //매주 월요일 실행
 //    @Scheduled(cron = "0 31 17 * * *")
-    @Scheduled(cron = "0 55 9 * * *")
+    @Scheduled(cron = "0 1 10 ? * MON")
     fun scheduledNewBooks() {
         println("신간도서 원래 도서목록에 추가 스케줄 실행")
         //신간 도서 등록
@@ -62,7 +74,7 @@ class MyBooksService(
     }
 
     //    @Scheduled(cron = "0 33 17 * * *")
-    @Scheduled(cron = "0 55 9 * * *")
+    @Scheduled(cron = "0 1 10 ? * MON")
     fun scheduledForeignBooks() {
         println("외국도서 원래 도서목록에 추가 스케줄 실행")
         //신간 도서 등록
@@ -146,6 +158,18 @@ class MyBooksService(
     fun getNewCategory(option: String ): List<BookDataResponse> {
         println("신간 레디스에서 조회해오기")
         val result = redisTemplate.opsForValue().get(option)
+        return if(result != null) {
+            mapper.readValue(result)
+        }else{
+            println("레디스 조회 실패")
+            return listOf()
+        }
+    }
+
+    //레디스에서 베스트셀러 조회
+    fun getBest(): List<BookBestResponse> {
+        println("레디스에서 베셀 조회해오기")
+        val result = redisTemplate.opsForValue().get("best-list")
         return if(result != null) {
             mapper.readValue(result)
         }else{

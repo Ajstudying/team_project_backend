@@ -1,5 +1,6 @@
 package com.example.commerce.api
 
+import com.example.commerce.books.BookBestResponse
 import com.example.commerce.books.NewBooks
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.selectAll
@@ -58,5 +59,14 @@ class MyBooksController(private val myBooksService: MyBooksService,
         val pagedData = result.subList(start, min(end, totalCount).toInt())
 
         return PageImpl(pagedData, PageRequest.of(page, size), totalCount)
+    }
+
+    @GetMapping("/best")
+    fun bestFetch()
+            :List<BookBestResponse> {
+        println("베스트셀러조회")
+        val result: List<BookBestResponse> = myBooksService.getBest()
+
+        return result
     }
 }

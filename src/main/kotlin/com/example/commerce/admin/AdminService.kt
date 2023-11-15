@@ -198,7 +198,7 @@ class AdminService(
         }
     }
 
-    @Scheduled(cron = "0 09 12 * * *")
+//    @Scheduled(cron = "0 */5 * * * *")
     fun fetchStockStatusData() {
         val currentDateTime = LocalDateTime.now()
         // 출력 형식을 정의하기 위한 DateTimeFormatter 사용 (선택 사항)
