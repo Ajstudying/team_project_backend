@@ -21,12 +21,11 @@ class MyBooksService(
 
     private val mapper = jacksonObjectMapper()
 
-
 //    @Scheduled(cron = "0 0 0 1 * ?")
     @Scheduled(cron = "30 0 10 ? * MON")
     fun scheduledFetchBooksData() {
-        println("--- booksData fetching ---")
-        val items = myBooksClient.getBooksData()
+        println("--- newBookData fetching ---")
+        val items = myBooksClient.newBooksFetch()
 
         val keywords = arrayOf(
                 "소설/시/희곡", "사회과학", "에세이", "여행", "역사", "예술/대중문화", "어린이", "외국어",
@@ -41,8 +40,8 @@ class MyBooksService(
             redisTemplate.opsForValue().set(keyword, mapper.writeValueAsString(category))
         }
         //결과값 저장
-        redisTemplate.delete("book-list")
-        redisTemplate.opsForValue().set("book-list", mapper.writeValueAsString(items))
+        redisTemplate.delete("new-list")
+        redisTemplate.opsForValue().set("new-list", mapper.writeValueAsString(items))
 
 //        items.forEach{ data ->
 //            // 책 데이터를 JSON 형태로 변환
@@ -156,8 +155,18 @@ class MyBooksService(
 
     //신간 카테고리 레디스에서 검색
     fun getNewCategory(option: String ): List<BookDataResponse> {
-        println("신간 레디스에서 조회해오기")
+        println("신간 카테고리 레디스에서 조회해오기")
         val result = redisTemplate.opsForValue().get(option)
+        return if(result != null) {
+            mapper.readValue(result)
+        }else{
+            println("레디스 조회 실패")
+            return listOf()
+        }
+    }
+    fun getNewList(): List<BookDataResponse> {
+        println("신간 레디스에서 조회해오기")
+        val result = redisTemplate.opsForValue().get("new-list")
         return if(result != null) {
             mapper.readValue(result)
         }else{
