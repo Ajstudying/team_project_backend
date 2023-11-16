@@ -1,21 +1,19 @@
 package com.example.commerce.payment
 
-import com.example.commerce.order.OrderResponse
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.annotation.EnableScheduling
-import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.util.*
 
 @EnableScheduling
 @Component
 class BankDataCheckScheduler(
-    private val paymentService: PaymentService,
-    private val paymentClient: PaymentClient,
-    private val redisTemplate: RedisTemplate<String, String>
+        private val paymentService: PaymentService,
+        private val paymentClient: PaymentClient,
+        private val redisTemplate: RedisTemplate<String, String>
 ) {
 
     //에러 로그 확인을 위해
@@ -41,9 +39,9 @@ class BankDataCheckScheduler(
             redisTemplate.delete(REDIS_KEY) // 캐시 데이터 삭제
             // 캐시 데이터 생성
             redisTemplate.opsForValue()
-                .set(REDIS_KEY, mapper.writeValueAsString(result))
+                    .set(REDIS_KEY, mapper.writeValueAsString(result))
 
-            paymentService.updateOrdersStatus(result);
+//            paymentService.updateOrdersStatus(result);
 
         } catch (e: Exception) {
             //에러메세지 확인
