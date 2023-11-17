@@ -35,7 +35,7 @@ class PaymentController(private val paymentService: PaymentService, private val 
 
         // 캐시 데이터 생성
         redisTemplate.opsForValue()
-                .set(REDIS_KEY, mapper.writeValueAsString(result))
+            .set(REDIS_KEY, mapper.writeValueAsString(result))
 
         return ResponseEntity.status(HttpStatus.OK).build()
     }
@@ -63,7 +63,7 @@ class PaymentController(private val paymentService: PaymentService, private val 
 
         println(bankDepositList)
 
-//        paymentService.updateOrdersStatus(bankDepositList)
+        paymentService.updateOrdersStatus(bankDepositList)
 
         return bankDepositList
     }

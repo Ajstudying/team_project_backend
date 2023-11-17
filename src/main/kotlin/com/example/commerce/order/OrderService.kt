@@ -28,15 +28,15 @@ class OrderService(private val database: Database) {
         // 주문생성 후 삭제할 장바구니 id를 먼저 얻어놓기(등록하는 트랙잰션 범위안에 포함시키지 않으려고 미리 조회)
         val cartRecord = transaction {
             Cart.slice(c.id)
-                    .select { Cart.profileId eq authProfile.id }.singleOrNull()
+                .select { Cart.profileId eq authProfile.id }.singleOrNull()
         }
 
         val cartId = cartRecord?.get(c.id)
 
         if (cartId == null) {
             println(
-                    "cartId is null. Check the cart table with authProfile : "
-                            + authProfile.id + "," + authProfile.userid
+                "cartId is null. Check the cart table with authProfile : "
+                        + authProfile.id + "," + authProfile.userid
             )
             return 0;
         }
@@ -48,20 +48,14 @@ class OrderService(private val database: Database) {
                 // 1. 주문을 생성하고 orderId 얻기
                 val orderId = createOrder(orderData, authProfile)
 
-                println(" -- 주문을 생성하고 orderId 얻기 : " + orderId)
-
                 // 2. 주문 Item(도서)정보 등록
-
                 val resultOrderItems = createOrderItem(orderData, orderId)
 
                 // 3. 배송지 정보 등록
                 createOrderAddress(orderData, orderId)
 
                 // 4. cart, cart_item 정보 삭제
-                if (cartId != null) {
-//                    deleteCart(cartId.toLong())
-                    deleteCartItem(cartId.toLong(), orderData)
-                };
+                deleteCartItem(cartId.toLong(), orderData);
 
                 // 5. 주문 판매데이터 업데이트 -> Admin 으로 이동
                 updateOrderSales(resultOrderItems)
@@ -83,10 +77,10 @@ class OrderService(private val database: Database) {
     fun createOrder(req: OrderCreateRequest, authProfile: AuthProfile): Long {
         println("\n<<< OrderService createOrder >>>")
         println(
-                "request Data ==> " +
-                        ",paymentMethod:" + req.paymentMethod +
-                        ",paymentPrice:" + req.paymentPrice +
-                        ",orderStatus:" + req.orderStatus
+            "request Data ==> " +
+                    ",paymentMethod:" + req.paymentMethod +
+                    ",paymentPrice:" + req.paymentPrice +
+                    ",orderStatus:" + req.orderStatus
         )
 
         // Order.insert를 사용하여 주문 생성
@@ -121,8 +115,8 @@ class OrderService(private val database: Database) {
         // 주문 항목 요청을 OrderItem 객체 배열로 변환
         val resultOrderItems = req.orderItems.map { orderItemRequest ->
             OrderSalesRequest(
-                    itemId = orderItemRequest.itemId,
-                    quantity = orderItemRequest.quantity,
+                itemId = orderItemRequest.itemId,
+                quantity = orderItemRequest.quantity,
             )
         }
 
@@ -133,13 +127,13 @@ class OrderService(private val database: Database) {
     fun createOrderAddress(req: OrderCreateRequest, orderId: Long): Long {
         println("\n<<< OrderService createOrderAddress >>>")
         println(
-                "request Data ==> " +
-                        ",deliveryName:" + req.orderAddress.deliveryName +
-                        ",deliveryPhone:" + req.orderAddress.deliveryPhone +
-                        ",postcode:" + req.orderAddress.postcode +
-                        ",address:" + req.orderAddress.address +
-                        ",detailAddress:" + req.orderAddress.detailAddress +
-                        ",deliveryMemo:" + req.orderAddress.deliveryMemo
+            "request Data ==> " +
+                    ",deliveryName:" + req.orderAddress.deliveryName +
+                    ",deliveryPhone:" + req.orderAddress.deliveryPhone +
+                    ",postcode:" + req.orderAddress.postcode +
+                    ",address:" + req.orderAddress.address +
+                    ",detailAddress:" + req.orderAddress.detailAddress +
+                    ",deliveryMemo:" + req.orderAddress.deliveryMemo
 
         )
 
@@ -188,7 +182,7 @@ class OrderService(private val database: Database) {
                 val bookId = Books.select {
                     (Books.itemId eq reqItem.itemId)
                 }.first()
-                        .let { it[Books.id] }
+                    .let { it[Books.id] }
 
                 // INSERT INTO order_stock( book_stock, item_id, status, book_id)
                 // values (?, ?, ?,  (select id from books where item_id =?))
@@ -208,8 +202,8 @@ class OrderService(private val database: Database) {
     fun deleteCart(cartId: Long) {
         println("\n<<< OrderService deleteCart >>>")
         println(
-                "request Data ==> " +
-                        ",cartId:" + cartId
+            "request Data ==> " +
+                    ",cartId:" + cartId
         )
 
         // delete FROM cart_item where cart_id = ?
@@ -225,8 +219,8 @@ class OrderService(private val database: Database) {
     fun deleteCartItem(cartId: Long, orderData: OrderCreateRequest) {
         println("\n<<< OrderService deleteCartItem >>>")
         println(
-                "request Data ==> " +
-                        ",cartId:" + cartId + ", orderData" + orderData
+            "request Data ==> " +
+                    ",cartId:" + cartId + ", orderData" + orderData
         )
 
         // 주문내역에서 Items만 추출
