@@ -202,7 +202,6 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
             b.join(OrderSales, JoinType.LEFT, onColumn = o.itemId, otherColumn = b.itemId)
                 .slice(b.columns + o.columns)
                 .select { Substring(Books.categoryName, intLiteral(1), intLiteral(13)) like "$option%" }
-//                .groupBy(b.itemId, o.itemId, b.id, o.id)
                 .orderBy(coalesce(o.bookSales, intLiteral(0)), SortOrder.DESC)
                 .limit(size, offset = (size * page).toLong())
                 .map { r ->
@@ -271,6 +270,7 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
         println(keyword)
         val n = NewBooks
 
+        //범위지정
         val query = run {
             n.select { Substring(NewBooks.categoryName, intLiteral(1), intLiteral(13)) like "국내도서>$keyword%" }
         }
@@ -427,7 +427,6 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
 
         //검색 조건 설정
         val query = when {
-
             option != null && keyword != null -> {
                 (b leftJoin c)
                     .slice(b.columns + commentCount)
@@ -439,7 +438,6 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
                                         (b.publisher like "%${keyword}%")) }
                     .groupBy(b.id)
             }
-
             option != null -> {
                 // 카테고리를 나누는 동작 처리
                 (b leftJoin c)

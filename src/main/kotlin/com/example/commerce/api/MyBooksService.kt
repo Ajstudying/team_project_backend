@@ -2,10 +2,13 @@ package com.example.commerce.api
 
 import com.example.commerce.books.BookBestResponse
 import com.example.commerce.books.Books
+import com.example.commerce.books.NewBooks
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.annotation.EnableScheduling
@@ -21,12 +24,11 @@ class MyBooksService(
 
     private val mapper = jacksonObjectMapper()
 
-//    @Scheduled(cron = "0 0 0 1 * ?")
-    @Scheduled(cron = "30 0 10 ? * MON")
+//    @Scheduled(cron = "30 0 10 ? * MON")
+    @Scheduled(cron = "0 42 15 * * *")
     fun scheduledFetchBooksData() {
         println("--- newBookData fetching ---")
         val items = myBooksClient.newBooksFetch()
-
         val keywords = arrayOf(
                 "소설/시/희곡", "사회과학", "에세이", "여행", "역사", "예술/대중문화", "어린이", "외국어",
                 "요리/살림", "유아", "인문학", "자기계발", "종교/역학",
