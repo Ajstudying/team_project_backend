@@ -3,6 +3,8 @@ package com.example.commerce.order
 import com.example.commerce.auth.Auth
 import com.example.commerce.auth.AuthProfile
 import com.example.commerce.books.Books
+import com.example.commerce.sales.OrderSales
+import com.example.commerce.sales.OrderSalesItem
 import com.example.commerce.sales.OrderSalesService
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.javatime.*
@@ -62,25 +64,29 @@ class OrderController(private val service: OrderService, private val salesServic
                     "주문하기 성공 : 주문번호 : " + orderId
             );
 
-            // 주문정보 담기(관리시스템으로 주문정보 RabbitMQ로 전송) --> 배치처리로 분리함
-//            val orderRequest = OrderSales(
-//                    id = orderId,
-//                    name = authProfile.nickname,
-//                    address = request.orderAddress.address,
-//                    orderSalesItems = request.orderItems.map {
-//                        OrderSalesItem(orderId, it.itemId.toLong(), "product", it.quantity, it.orderPrice.toLong())
-//                    }
-//            )
-//
-//            try {
-//                // 관리시스템으로 주문정보 RabbitMQ로 전송 ==> 배치에서 전달하는것으로 변경
-//                salesService.sendOrder(orderRequest);
-//                ResponseEntity.status(HttpStatus.CREATED).body(orderId)
-//            } catch (e: Exception) {
-//                println("주문정보 RabbitMQ로 전송 실패")
-//                println(e.printStackTrace())
-//                ResponseEntity.status(HttpStatus.CREATED).body(orderId)
-//            }
+            // 주문정보 담기(관리시스템으로 주문정보 RabbitMQ로 전송)
+            // 관리시스템이 문제가 발생하여 전송이 안될경우를 대비하여 배치 서버에서 처리될수 있도록 함
+            val orderRequest = OrderSales(
+                    id = orderId,
+                    name = authProfile.nickname,
+                    address = request.orderAddress.address,
+                    orderSalesItems = request.orderItems.map {
+                        OrderSalesItem(orderId, it.itemId.toLong(), "product", it.quantity, it.orderPrice.toLong())
+                    }
+            )
+
+            try {
+                // 관리시스템으로 주문정보 RabbitMQ로 전송 
+                // 온라인입금 결제일 경우 전송하지 않음
+                if (request.paymentMethod != "3") {
+                    salesService.sendOrder(orderRequest);
+                    ResponseEntity.status(HttpStatus.CREATED).body(orderId)
+                }
+            } catch (e: Exception) {
+                println("주문정보 RabbitMQ로 전송 실패")
+                println(e.printStackTrace())
+                ResponseEntity.status(HttpStatus.CREATED).body(orderId)
+            }
 
             ResponseEntity.status(HttpStatus.CREATED).body(orderId)
         } else {

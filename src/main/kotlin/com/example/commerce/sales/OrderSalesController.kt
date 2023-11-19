@@ -1,6 +1,7 @@
 package com.example.commerce.sales
 
 import com.example.commerce.auth.Auth
+import com.example.commerce.books.BookBestResponse
 import com.example.commerce.books.Books
 import com.example.commerce.order.OrderAddress
 import com.example.commerce.order.OrderItem
@@ -46,7 +47,7 @@ class OrderSalesController(private val orderService: OrderSalesService) {
         val orderInfo =
                 (Orders innerJoin OrderAddress)
                         .slice(Orders.id, OrderAddress.deliveryName, OrderAddress.address)
-                        .select { (OrderAddress.orderId eq Orders.id) and (Orders.batchStatus eq null) }
+                        .select { (OrderAddress.orderId eq Orders.id) and (Orders.batchStatus eq null) and (Orders.paymentMethod neq "3") }
                         .map {
                             OrderMasterForSales(
                                     it[Orders.id],
@@ -106,5 +107,14 @@ class OrderSalesController(private val orderService: OrderSalesService) {
                 it[batchStatus] = "1";
             }
         }
+    }
+
+    @GetMapping("/best-books")
+    fun getSalesBestBooks()
+            : List<BookBestResponse> {
+        println("베스트셀러조회")
+        val result: List<BookBestResponse> = orderService.getSalesBestBooks()
+
+        return result
     }
 }

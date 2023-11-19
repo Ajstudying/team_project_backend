@@ -10,6 +10,7 @@ import java.util.*
 
 @EnableScheduling
 @Component
+
 class BankDataCheckScheduler(
         private val paymentService: PaymentService,
         private val paymentClient: PaymentClient,
@@ -24,24 +25,24 @@ class BankDataCheckScheduler(
     private val mapper = jacksonObjectMapper()
 
 
-    // 5분 마다 처리
-//    @Scheduled(cron = "0 */5 * * * *")
+    // 1분 마다 처리
+//    @Scheduled(cron = "0 */1 * * * *")
     fun scheduledFetchBankDeposit() {
         println("======= scheduledFetchBankDeposit ${Date().time} =======행")
 
         try {
             val result = paymentClient.getBankDeposit()
 
-            println(">> paymentClient.getBankDeposit: " + result)
+            println(">> 배치서버로 온라인입금 여부에 대한 요청 처리: " + result)
 
-            // RedisTemplate<key=String, value=String>
-            // default: localhost:6379
-            redisTemplate.delete(REDIS_KEY) // 캐시 데이터 삭제
-            // 캐시 데이터 생성
-            redisTemplate.opsForValue()
-                    .set(REDIS_KEY, mapper.writeValueAsString(result))
+//            // RedisTemplate<key=String, value=String>
+//            // default: localhost:6379
+//            redisTemplate.delete(REDIS_KEY) // 캐시 데이터 삭제
+//            // 캐시 데이터 생성
+//            redisTemplate.opsForValue()
+//                    .set(REDIS_KEY, mapper.writeValueAsString(result))
 
-//            paymentService.updateOrdersStatus(result);
+            paymentService.updateOrdersStatus(result);
 
         } catch (e: Exception) {
             //에러메세지 확인

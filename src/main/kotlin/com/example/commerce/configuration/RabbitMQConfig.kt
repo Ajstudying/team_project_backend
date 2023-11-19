@@ -32,7 +32,8 @@ class RabbitMQConfig {
     @Primary
     fun connectionFactory1(): ConnectionFactory {
         val connectionFactory = CachingConnectionFactory()
-        connectionFactory.setHost("192.168.100.204")
+//        connectionFactory.setHost("192.168.100.204")
+        connectionFactory.setHost("192.168.0.5")
 //        connectionFactory.setHost("192.168.100.177")
 //        connectionFactory.setHost("192.168.100.36")
 //        connectionFactory.setHost("192.168.100.155")
