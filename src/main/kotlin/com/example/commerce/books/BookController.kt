@@ -194,7 +194,6 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
         println("$option 베스트 조회")
 
         val totalItemCount = transaction(Connection.TRANSACTION_READ_COMMITTED, readOnly = true) {
-            val b = Books
             b.select { Substring(b.categoryName, intLiteral(1), intLiteral(13)) like "$option%" }
                 .count()
         }
