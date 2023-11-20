@@ -5,6 +5,7 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.annotation.EnableScheduling
+import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.util.*
 
@@ -12,9 +13,9 @@ import java.util.*
 @Component
 
 class BankDataCheckScheduler(
-        private val paymentService: PaymentService,
-        private val paymentClient: PaymentClient,
-        private val redisTemplate: RedisTemplate<String, String>
+    private val paymentService: PaymentService,
+    private val paymentClient: PaymentClient,
+    private val redisTemplate: RedisTemplate<String, String>
 ) {
 
     //에러 로그 확인을 위해
@@ -26,7 +27,7 @@ class BankDataCheckScheduler(
 
 
     // 1분 마다 처리
-//    @Scheduled(cron = "0 */1 * * * *")
+    @Scheduled(cron = "0 */1 * * * *")
     fun scheduledFetchBankDeposit() {
         println("======= scheduledFetchBankDeposit ${Date().time} =======행")
 

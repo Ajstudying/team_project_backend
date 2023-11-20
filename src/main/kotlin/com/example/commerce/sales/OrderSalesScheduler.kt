@@ -6,16 +6,17 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.annotation.EnableScheduling
+import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.util.*
 
 @EnableScheduling
 @Component
 class OrderSalesScheduler(
-        private val orderSalesController: OrderSalesController,
-        private val orderSalesService: OrderSalesService,
-        private val bookController: BookController,
-        private val redisTemplate: RedisTemplate<String, String>
+    private val orderSalesController: OrderSalesController,
+    private val orderSalesService: OrderSalesService,
+    private val bookController: BookController,
+    private val redisTemplate: RedisTemplate<String, String>
 ) {
 
     //에러 로그 확인을 위해
@@ -27,7 +28,7 @@ class OrderSalesScheduler(
 
     // 주문데이터의 판매정보를 관리시스템으로 전송
     // 처리 간격 : 1분
-//    @Scheduled(cron = "0 */1 * * * *")
+    @Scheduled(cron = "0 */1 * * * *")
     fun scheduledSSendOrderSales() {
         println("======= 주문정보를 발송시스템으로 전송(1분 간격)  ${Date().time} =======")
 
@@ -46,10 +47,10 @@ class OrderSalesScheduler(
 
                 // 주문정보 담기(관리시스템으로 주문정보 RabbitMQ로 전송)
                 val orderRequest = OrderSales(
-                        id = reqItems.id,
-                        name = reqItems.name,
-                        address = reqItems.address,
-                        orderSalesItems = orderItemList
+                    id = reqItems.id,
+                    name = reqItems.name,
+                    address = reqItems.address,
+                    orderSalesItems = orderItemList
                 )
 
                 println(orderRequest)
