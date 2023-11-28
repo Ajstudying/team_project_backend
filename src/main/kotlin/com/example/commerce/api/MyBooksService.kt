@@ -24,8 +24,8 @@ class MyBooksService(
 
     private val mapper = jacksonObjectMapper()
 
-//    @Scheduled(cron = "30 0 10 ? * MON")
-    @Scheduled(cron = "0 42 15 * * *")
+//    @Scheduled(cron = "0 42 15 * * *")
+    @Scheduled(cron = "30 0 10 ? * MON")
     fun scheduledFetchBooksData() {
         println("--- newBookData fetching ---")
         val items = myBooksClient.newBooksFetch()

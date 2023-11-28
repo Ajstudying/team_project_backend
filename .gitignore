@@ -38,3 +38,6 @@ out/
 ### VS Code ###
 .vscode/
 
+## application-dev.properties
+application-dev.properites
+
