@@ -54,7 +54,7 @@ class AdminService(
 
         try {
             println("데이터 받기 시작해요!!")
-            val dataAPI: TodayDataResponse = adminClient.getTodayBook("2023-10-31")
+            val dataAPI: TodayDataResponse = adminClient.getTodayBook(formattedDateTime)
 
             val existingToday = TodayBook.select { TodayBook.itemId eq dataAPI.itemId }.singleOrNull()
 

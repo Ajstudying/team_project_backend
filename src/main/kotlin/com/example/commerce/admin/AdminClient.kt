@@ -7,7 +7,7 @@ import org.springframework.web.multipart.MultipartFile
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-@FeignClient(name = "office", url="http://192.168.100.94:8082/books")
+@FeignClient(name = "office")
 interface AdminClient {
 
     @GetMapping("/today")
