@@ -15,15 +15,6 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder
 @RequestMapping("/api/book-commerce/auth")
 class AuthController(private val service: AuthService) {
 
-    @Value("\${app.cookie.domain}")
-    private val cookieDomain: String = "d7gp93w7wekd9.cloudfront.net"
-
-    @Value("\${app.login.url}")
-    private val loginUrl: String = "http://d7gp93w7wekd9.cloudfront.net/auth/login.html"
-
-    @Value("\${app.home.url}")
-    private val homeUrl: String = "http://d7gp93w7wekd9.cloudfront.net"
-
     @PostMapping(value = ["/signup"])
     fun signUp(@RequestBody req: SignupRequest): ResponseEntity<Long> {
         //객체가 들어온건지 확인
