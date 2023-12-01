@@ -25,7 +25,7 @@ import java.time.format.DateTimeFormatter
 import java.util.*
 
 @RestController
-@RequestMapping("/admin-service")
+@RequestMapping("/api/book-commerce/admin-service")
 class AdminController(private val adminService: AdminService) {
 
     //오늘의 북 데이터 받아서

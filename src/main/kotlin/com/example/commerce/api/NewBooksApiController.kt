@@ -12,7 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/aladin")
+@RequestMapping("/api/book-commerce/aladin")
 class NewBooksApiController (private  val newBooksDataApiService: NewBooksDataApiService){
 
     //에러 로그 확인을 위해

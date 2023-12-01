@@ -40,4 +40,6 @@ out/
 
 ## application-dev.properties
 application-dev.properties
+docker-compose.yml
+Dockerfile
 
