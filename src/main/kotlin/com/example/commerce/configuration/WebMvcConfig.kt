@@ -18,7 +18,7 @@ class WebMvcConfig(val authInterceptor: AuthInterceptor) : WebMvcConfigurer {
                     "http://127.0.0.1:5500",
                     "http://localhost:5000",
                     "https://d7gp93w7wekd9.cloudfront.net",
-                    "http://d7gp93w7wekd9.cloudfront.net",
+                    "https://d1naeto6zidndq.cloudfront.net",
                     "ec2-15-164-111-91.ap-northeast-2.compute.amazonaws.com ",
                 ).allowedMethods("*") // 모든 메서드 허용(GET, POST.....)
     }
