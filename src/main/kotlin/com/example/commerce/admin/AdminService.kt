@@ -191,6 +191,7 @@ class AdminService(
                     sendHits(hitsDataResponse)
                 }catch (e: Exception){
                     println("레빗 전송 오류")
+                    println(e)
                 }
 
             }
