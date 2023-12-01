@@ -74,7 +74,8 @@ class NewBooksDataApiService(
         }
 
     }
-//    @Scheduled(cron = "0 50 9 * * *")
+
+//    @Scheduled(cron = "0 54 17 * * *")
     @Scheduled(cron = "0 0 10 ? * MON")
     fun fetchForeignDataToday() {
         println("외서 스케줄 실행")

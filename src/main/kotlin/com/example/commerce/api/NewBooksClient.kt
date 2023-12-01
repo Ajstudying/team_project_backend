@@ -11,7 +11,7 @@ interface NewBooksClient {
     @GetMapping("/ItemList.aspx?ttbkey=ttbrkddowls01111124001&QueryType=ItemNewAll&MaxResults=50&start=1&SearchTarget=Book&output=js&Version=20131101")
     fun fetch() : NewBookDataResponse
 
-    @GetMapping("/ItemList.aspx?ttbkey=ttbrkddowls01111124001&QueryType=ItemNewAll&MaxResults=50&start=1&SearchTarget=Foreign&output=js&Version=20131101")
+    @GetMapping("/ItemList.aspx?ttbkey=ttbrkddowls01111124001&QueryType=ItemNewSpecial&MaxResults=100&start=1&SearchTarget=Foreign&output=js&Version=20131101")
     fun foreignFetch(): NewBookDataResponse
 
     @GetMapping("/ItemSearch.aspx")
