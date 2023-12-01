@@ -1,26 +1,28 @@
 package com.example.commerce.auth
 
 import com.example.commerce.auth.util.JwtUtil
-import com.example.commerce.books.Books
-import com.example.commerce.cart.Cart
-import com.example.commerce.cart.CartItem
-import com.example.commerce.cart.CartItemResponse
 import jakarta.servlet.http.Cookie
 import jakarta.servlet.http.HttpServletResponse
-import org.jetbrains.exposed.sql.JoinType
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder
-import java.sql.Connection
 
 @RestController
 @RequestMapping("/api/book-commerce/auth")
 class AuthController(private val service: AuthService) {
+
+    @Value("\${app.cookie.domain}")
+    private val cookieDomain: String = "d7gp93w7wekd9.cloudfront.net"
+
+    @Value("\${app.login.url}")
+    private val loginUrl: String = "http://d7gp93w7wekd9.cloudfront.net/auth/login.html"
+
+    @Value("\${app.home.url}")
+    private val homeUrl: String = "http://d7gp93w7wekd9.cloudfront.net"
 
     @PostMapping(value = ["/signup"])
     fun signUp(@RequestBody req: SignupRequest): ResponseEntity<Long> {
@@ -39,11 +41,15 @@ class AuthController(private val service: AuthService) {
     fun signIn(
         @RequestParam userid: String,
         @RequestParam password: String,
+        // Referer : http://this.cloudfront.net/auth/login
+        // Referer : http://that.cloudfront.net/auth/login
+        @RequestHeader (value = "referer", required = false) referer: String,
         res: HttpServletResponse,
     ): ResponseEntity<*> {
         //값이 들어온 것을 확인
         println(userid)
         println(password)
+        println(referer)
 
         val (result, message) = service.authenticate(userid, password)
         println(result)
@@ -52,7 +58,8 @@ class AuthController(private val service: AuthService) {
             val cookie = Cookie("token", message)
             cookie.path = "/"
             cookie.maxAge = (JwtUtil.TOKEN_TIMEOUT / 1000L).toInt() // 만료시간
-            cookie.domain = "localhost"
+            cookie.domain = referer.split("/")[2].split(":")[0] // 쿠키를 사용할 수 있는 도메인
+//            cookie.domain = "localhost"
 
             // 응답헤더에 쿠키 추가
             res.addCookie(cookie)
@@ -62,7 +69,7 @@ class AuthController(private val service: AuthService) {
                 .status(HttpStatus.FOUND)
                 .location(
                     ServletUriComponentsBuilder
-                        .fromHttpUrl("http://localhost:5000")
+                        .fromHttpUrl("${referer.split("/")[0]}://${referer.split("/")[2]}")
                         .build().toUri()
                 )
                 .build<Any>()
@@ -72,11 +79,12 @@ class AuthController(private val service: AuthService) {
             .status(HttpStatus.FOUND)
             .location(
                 ServletUriComponentsBuilder
-                    .fromHttpUrl("http://localhost:5000/login.html?err=$message")
+                    .fromHttpUrl("$referer?err=$message")
                     .build().toUri()
             )
             .build<Any>()
     }
+
 
     @Auth
     @GetMapping(value = ["/profile"])
