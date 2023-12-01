@@ -29,7 +29,7 @@ import java.lang.Long.min
 import java.sql.Connection
 
 @RestController
-@RequestMapping("/books")
+@RequestMapping("/api/book-commerce/books")
 class BookController (private val resourceLoader: ResourceLoader, private val service: BookService) {
 
 

@@ -19,7 +19,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder
 import java.sql.Connection
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/book-commerce/auth")
 class AuthController(private val service: AuthService) {
 
     @PostMapping(value = ["/signup"])

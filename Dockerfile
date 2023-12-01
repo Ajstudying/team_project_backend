@@ -3,7 +3,7 @@
 FROM eclipse-temurin:17-jre
 # 컨테이너를 연결할 폴더(디렉터리)
 # tmp(temporary) 임시 디렉터리
-VOLUME /tmp
+#VOLUME /tmp
 # 환경변수
 ARG JAR_FILE=build/libs/*.jar
 # 호스트 운영체제 실제 경로에서 파일을 VOLUME 경로에 복사
