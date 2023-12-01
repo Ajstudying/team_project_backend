@@ -42,6 +42,9 @@ class AuthController(private val service: AuthService) {
         println(password)
         println(referer)
 
+        println(referer.split("/")[2].split(":")[0])
+        println("${referer.split("/")[0]}://${referer.split("/")[2]}")
+
         val (result, message) = service.authenticate(userid, password)
         println(result)
         if (result) {
@@ -60,7 +63,7 @@ class AuthController(private val service: AuthService) {
                 .status(HttpStatus.FOUND)
                 .location(
                     ServletUriComponentsBuilder
-                        .fromHttpUrl("${referer.split("/")[0]}://${referer.split("/")[2]}")
+                        .fromHttpUrl("${referer.split("/")[0]}//${referer.split("/")[2]}")
                         .build().toUri()
                 )
                 .build<Any>()
