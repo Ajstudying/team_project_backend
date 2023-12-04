@@ -10,7 +10,7 @@ services:
     networks:
       - my-network
   app:
-    image: "rkddowls/bookshop" # 여기에 Spring Boot 도커 이미지 이름을 사용하세요.
+    image: "hbin1028/commerce" # 여기에 Spring Boot 도커 이미지 이름을 사용하세요.
     #commerce:latest, commerce:v1 <<같이 특정한 것을 선택 가능
     ports:
       - "8081:8081" # 호스트의 포트를 컨테이너의 포트에 매핑합니다.
