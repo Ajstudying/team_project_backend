@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@RequestMapping("/payment")
+@RequestMapping("/api/order-commerce/payment")
 class PaymentController(private val paymentService: PaymentService, private val paymentClient: PaymentClient) {
 
     @Autowired
