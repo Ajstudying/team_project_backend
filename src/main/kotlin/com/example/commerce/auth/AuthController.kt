@@ -38,8 +38,8 @@ class AuthController(private val service: AuthService) {
         res: HttpServletResponse,
     ): ResponseEntity<*> {
         //값이 들어온 것을 확인
-        println(userid)
-        println(password)
+        println("====== /api/book-commerce/auth ==========")
+        println(userid+","+ password)
         println(referer)
 
         println(referer.split("/")[2].split(":")[0])

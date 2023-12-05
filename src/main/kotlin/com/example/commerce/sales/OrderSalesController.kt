@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*
 import java.sql.Connection
 
 @RestController
-@RequestMapping("/orders/sales")
+@RequestMapping("/api/order-commerce/orders/sales")
 class OrderSalesController(private val orderService: OrderSalesService) {
 
     @PostMapping
