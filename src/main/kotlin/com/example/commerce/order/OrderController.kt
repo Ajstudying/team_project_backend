@@ -20,7 +20,7 @@ import java.sql.Date
 
 //@Tag(name="주문 처리 API")
 @RestController
-@RequestMapping("/order")
+@RequestMapping("/api/order-commerce/order")
 class OrderController(private val service: OrderService, private val salesService: OrderSalesService) {
 
     // 주문 생성
