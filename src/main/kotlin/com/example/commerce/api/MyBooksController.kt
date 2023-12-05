@@ -19,7 +19,7 @@ import java.sql.Connection
 
 
 @RestController
-@RequestMapping("/redis")
+@RequestMapping("/api/book-commerce/redis")
 class MyBooksController(private val myBooksService: MyBooksService,
                         private val redisTemplate: RedisTemplate<String, String>) {
 
