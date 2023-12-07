@@ -41,6 +41,6 @@ out/
 ## application-dev.properties
 application.properties
 application-dev.properties
-docker-compose.yml
+docker-compose-lee.yml
 
 
