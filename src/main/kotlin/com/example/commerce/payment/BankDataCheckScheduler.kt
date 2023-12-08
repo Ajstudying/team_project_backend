@@ -13,9 +13,9 @@ import java.util.*
 @Component
 
 class BankDataCheckScheduler(
-    private val paymentService: PaymentService,
-    private val paymentClient: PaymentClient,
-    private val redisTemplate: RedisTemplate<String, String>
+        private val paymentService: PaymentService,
+        private val paymentClient: PaymentClient,
+        private val redisTemplate: RedisTemplate<String, String>
 ) {
 
     //에러 로그 확인을 위해
@@ -26,10 +26,10 @@ class BankDataCheckScheduler(
     private val mapper = jacksonObjectMapper()
 
 
-    // 1분 마다 처리
-    @Scheduled(cron = "0 */1 * * * *")
+    // 1시간 마다 처리
+    @Scheduled(cron = "0 0 1 * * *")
     fun scheduledFetchBankDeposit() {
-        println("======= scheduledFetchBankDeposit ${Date().time} =======행")
+        println("======= scheduledFetchBankDeposit (간격:1시간) ${Date().time} =======행")
 
         try {
             val result = paymentClient.getBankDeposit()
