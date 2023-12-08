@@ -8,6 +8,8 @@ import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PutMapping
 import java.util.*
 
 @EnableScheduling
@@ -28,7 +30,7 @@ class OrderSalesScheduler(
 
     // 주문데이터의 판매정보를 관리시스템으로 전송
     // 처리 간격 : 1시간
-    @Scheduled(cron = "0 * 1 * * *")
+    @Scheduled(cron = "0 0 1 * * *")
     fun scheduledSSendOrderSales() {
         println("=======* 주문정보를 발송시스템으로 전송(1시간 간격)  ${Date().time} =======")
 
@@ -69,15 +71,6 @@ class OrderSalesScheduler(
 
     }
 
-    @Scheduled(cron = "0 * 1 * * *")
-    fun scheduledFetchBestBooksData() {
-        println("--- 판매정보 조회 후 레디스에 저장(주기:1시간) ---")
-        val result: List<BookBestResponse> = bookController.getBestList()
 
-        //결과값 저장
-        redisTemplate.delete("sales-best-books")
-        redisTemplate.opsForValue().set("sales-best-books", mapper.writeValueAsString(result))
-
-    }
 
 }

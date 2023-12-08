@@ -6,17 +6,27 @@ import com.example.commerce.books.Books
 import com.example.commerce.order.OrderAddress
 import com.example.commerce.order.OrderItem
 import com.example.commerce.order.Orders
+import com.example.commerce.books.BookController
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.jetbrains.exposed.sql.JoinType
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
+import org.springframework.data.redis.core.RedisTemplate
+import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.web.bind.annotation.*
 import java.sql.Connection
 
 @RestController
 @RequestMapping("/api/order-commerce/orders/sales")
-class OrderSalesController(private val orderService: OrderSalesService) {
+class OrderSalesController(private val orderService: OrderSalesService,
+                           private val bookController: BookController,
+                           private val redisTemplate: RedisTemplate<String, String>
+) {
+
+    // Object <-> JSON
+    private val mapper = jacksonObjectMapper()
 
     @PostMapping
     fun createOrder(@RequestBody orderRequest: OrderSales) {
@@ -116,5 +126,19 @@ class OrderSalesController(private val orderService: OrderSalesService) {
         val result: List<BookBestResponse> = orderService.getSalesBestBooks()
 
         return result
+    }
+
+    @GetMapping("/set-best-books")
+    @Scheduled(cron = "0 0 0 1 * *")
+    fun scheduledFetchBestBooksData() {
+        println("--- 판매정보 조회 후 레디스에 저장(주기:1일) ---")
+        val result: List<BookBestResponse> = bookController.getBestList()
+
+        //결과값 저장
+        redisTemplate.delete("sales-best-books")
+        redisTemplate.opsForValue().set("sales-best-books", mapper.writeValueAsString(result))
+
+        println("--- 판매정보 조회 후 레디스에 저장(주기:1일) ---")
+
     }
 }
