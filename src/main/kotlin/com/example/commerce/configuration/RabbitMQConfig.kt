@@ -22,11 +22,6 @@ class RabbitMQConfig {
     @Value("\${second.rabbitmq.addresses}")
     private lateinit var secondHost: String
 
-    @PostConstruct
-    fun printBeanCreationOrder() {
-        println("Bean creation order: defaultHost=$defaultHost, secondHost=$secondHost")
-    }
-
     @Bean
     fun queue1() = Queue("create-order")
 
