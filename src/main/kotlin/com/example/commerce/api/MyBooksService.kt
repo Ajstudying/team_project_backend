@@ -78,7 +78,7 @@ class MyBooksService(
         setNewBooks(myBooksClient.newBooksFetch())
     }
 //    @Scheduled(cron = "0 57 17 * * *")
-    @Scheduled(cron = "0 1 10 ? * MON")
+    R
     fun scheduledForeignBooks() {
         println("외국도서 원래 도서목록에 추가 스케줄 실행")
         //신간 도서 등록
