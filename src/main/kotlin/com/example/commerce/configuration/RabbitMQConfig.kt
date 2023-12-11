@@ -17,10 +17,10 @@ import org.springframework.context.annotation.Primary
 class RabbitMQConfig {
 
     @Value("\${spring.rabbitmq.addresses}")
-    private val defaultHost: String = ""
+    private lateinit var defaultHost: String
 
     @Value("\${second.rabbitmq.addresses}")
-    private val secondHost: String = ""
+    private lateinit var secondHost: String
 
     @PostConstruct
     fun printBeanCreationOrder() {
@@ -37,7 +37,7 @@ class RabbitMQConfig {
     @Primary
     fun connectionFactory1(): ConnectionFactory {
         println("첫 실행")
-        println(defaultHost)
+
         val connectionFactory = CachingConnectionFactory()
 //        connectionFactory.setHost("192.168.100.204")
 //        connectionFactory.setHost("192.168.0.5")
@@ -45,7 +45,8 @@ class RabbitMQConfig {
 //        connectionFactory.setHost("192.168.100.36")
 //        connectionFactory.setHost("192.168.100.155")
 //        connectionFactory.port = 5672
-        connectionFactory.setAddresses(defaultHost)
+        connectionFactory.setUri(defaultHost)
+        println(defaultHost)
         connectionFactory.username = "rabbit"
         connectionFactory.setPassword("password1234!")
 
@@ -64,11 +65,14 @@ class RabbitMQConfig {
     @Bean("connectionFactory2")
     fun connectionFactory2(): ConnectionFactory {
         println("두번째 실행")
-        println(secondHost)
+
+//        val modifyHost = secondHost.split("/")[2].split(":")[0]
+//        println(modifyHost)
         val connectionFactory = CachingConnectionFactory()
-//        connectionFactory.setHost("192.168.100.94")
+//        connectionFactory.setHost(modifyHost)
 //        connectionFactory.port = 5672
-        connectionFactory.setAddresses(secondHost)
+        connectionFactory.setUri(secondHost)
+        println(secondHost)
         connectionFactory.username = "rabbit"
         connectionFactory.setPassword("password1234!")
         return connectionFactory
@@ -96,6 +100,7 @@ class RabbitMQConfig {
 
     @Bean("rabbitTemplate1")
     fun rabbitTemplate1(@Qualifier("connectionFactory1") connectionFactory1: ConnectionFactory): RabbitTemplate {
+        println("첫번째 레빗 생성")
         val rabbitTemplate = RabbitTemplate(connectionFactory1)
         // 메시지 컨버터 및 기타 구성 추가
         return rabbitTemplate
@@ -103,6 +108,7 @@ class RabbitMQConfig {
 
     @Bean("rabbitTemplate2")
     fun rabbitTemplate2(@Qualifier("connectionFactory2") connectionFactory2: ConnectionFactory): RabbitTemplate {
+        println("두번째 레빗 생성")
         val rabbitTemplate = RabbitTemplate(connectionFactory2)
         // 메시지 컨버터 및 기타 구성 추가
         return rabbitTemplate
