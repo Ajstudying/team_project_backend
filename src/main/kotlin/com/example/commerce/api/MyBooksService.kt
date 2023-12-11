@@ -27,7 +27,7 @@ class MyBooksService(
 
 //    @Scheduled(cron = "0 20 14 * * *")
 //@Scheduled(cron = "0 */30 * * * *")
-    @Scheduled(cron = "0 35 14 ? * MON")
+    @Scheduled(cron = "0 */10 * ? * MON")
     fun scheduledFetchBooksData() {
         println("--- newBookData fetching ---")
         val items = myBooksClient.newBooksFetch()
@@ -58,7 +58,7 @@ class MyBooksService(
 
 //    @Scheduled(cron = "0 20 14 * * *")
 //    @Scheduled(cron = "0 */30 * * * *")
-    @Scheduled(cron = "0 35 14 ? * MON")
+    @Scheduled(cron = "0 */10 * ? * MON")
     fun scheduledFetchBestBooksData() {
         println("--- bestData fetching ---")
         val items = myBooksClient.bestFetch()
