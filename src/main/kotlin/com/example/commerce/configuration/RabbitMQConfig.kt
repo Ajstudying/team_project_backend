@@ -1,5 +1,6 @@
 package com.example.commerce.configuration
 
+import jakarta.annotation.PostConstruct
 import org.springframework.amqp.core.Queue
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory
@@ -12,7 +13,6 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Primary
 
-
 @Configuration
 class RabbitMQConfig {
 
@@ -22,15 +22,22 @@ class RabbitMQConfig {
     @Value("\${second.rabbitmq.addresses}")
     private val secondHost: String = ""
 
+    @PostConstruct
+    fun printBeanCreationOrder() {
+        println("Bean creation order: defaultHost=$defaultHost, secondHost=$secondHost")
+    }
+
     @Bean
     fun queue1() = Queue("create-order")
 
     @Bean
     fun queue2() = Queue("hits-queue")
 
-    @Bean
+    @Bean("connectionFactory1")
     @Primary
     fun connectionFactory1(): ConnectionFactory {
+        println("첫 실행")
+        println(defaultHost)
         val connectionFactory = CachingConnectionFactory()
 //        connectionFactory.setHost("192.168.100.204")
 //        connectionFactory.setHost("192.168.0.5")
@@ -45,16 +52,19 @@ class RabbitMQConfig {
         return connectionFactory
     }
 
-    @Bean
-    fun rabbitListenerContainerFactory1(connectionFactory1: ConnectionFactory): SimpleRabbitListenerContainerFactory {
-        val factory = SimpleRabbitListenerContainerFactory()
-        factory.setConnectionFactory(connectionFactory1)
-        // 다른 설정 추가 가능
-        return factory
-    }
+    //레빗 메세지 받는 컨테이너 팩토리
+//    @Bean
+//    fun rabbitListenerContainerFactory1(@Qualifier("connectionFactory1") connectionFactory1: ConnectionFactory): SimpleRabbitListenerContainerFactory {
+//        val factory = SimpleRabbitListenerContainerFactory()
+//        factory.setConnectionFactory(connectionFactory1)
+//        // 다른 설정 추가 가능
+//        return factory
+//    }
 
-    @Bean
+    @Bean("connectionFactory2")
     fun connectionFactory2(): ConnectionFactory {
+        println("두번째 실행")
+        println(secondHost)
         val connectionFactory = CachingConnectionFactory()
 //        connectionFactory.setHost("192.168.100.94")
 //        connectionFactory.port = 5672
@@ -64,13 +74,14 @@ class RabbitMQConfig {
         return connectionFactory
     }
 
-    @Bean
-    fun rabbitListenerContainerFactory2(connectionFactory2: ConnectionFactory): SimpleRabbitListenerContainerFactory {
-        val factory = SimpleRabbitListenerContainerFactory()
-        factory.setConnectionFactory(connectionFactory2)
-        // 다른 설정 추가 가능
-        return factory
-    }
+    //메세지 받는 컨테이너 팩토리
+//    @Bean
+//    fun rabbitListenerContainerFactory2(@Qualifier("connectionFactory2") connectionFactory2: ConnectionFactory): SimpleRabbitListenerContainerFactory {
+//        val factory = SimpleRabbitListenerContainerFactory()
+//        factory.setConnectionFactory(connectionFactory2)
+//        // 다른 설정 추가 가능
+//        return factory
+//    }
 
 //    @Bean
 //    fun rabbitAdmin1(connectionFactory1: ConnectionFactory): RabbitAdmin {
@@ -83,14 +94,14 @@ class RabbitMQConfig {
 //    }
 
 
-    @Bean
+    @Bean("rabbitTemplate1")
     fun rabbitTemplate1(@Qualifier("connectionFactory1") connectionFactory1: ConnectionFactory): RabbitTemplate {
         val rabbitTemplate = RabbitTemplate(connectionFactory1)
         // 메시지 컨버터 및 기타 구성 추가
         return rabbitTemplate
     }
 
-    @Bean
+    @Bean("rabbitTemplate2")
     fun rabbitTemplate2(@Qualifier("connectionFactory2") connectionFactory2: ConnectionFactory): RabbitTemplate {
         val rabbitTemplate = RabbitTemplate(connectionFactory2)
         // 메시지 컨버터 및 기타 구성 추가
