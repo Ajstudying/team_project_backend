@@ -30,7 +30,7 @@ class OrderSalesScheduler(
 
     // 주문데이터의 판매정보를 관리시스템으로 전송
     // 처리 간격 : 1시간
-    @Scheduled(cron = "0 0 1 * * *")
+    //@Scheduled(cron = "0 0 1 * * *")
     fun scheduledSSendOrderSales() {
         println("=======* 주문정보를 발송시스템으로 전송(1시간 간격)  ${Date().time} =======")
 
