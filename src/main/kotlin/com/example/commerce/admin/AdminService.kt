@@ -45,7 +45,7 @@ class AdminService(
     private val ADMIN_FILE_PATH = "files/main"
 
 //    @Scheduled(cron = "0 0 0 * * *")
-    @Scheduled(cron = "0 45 9 * * *")
+//    @Scheduled(cron = "0 45 9 * * *")
     fun fetchTodayData() {
         val currentDateTime = LocalDateTime.now()
         // 출력 형식을 정의하기 위한 DateTimeFormatter 사용 (선택 사항)

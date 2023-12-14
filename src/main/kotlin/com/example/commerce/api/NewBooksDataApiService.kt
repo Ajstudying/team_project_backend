@@ -26,7 +26,7 @@ class NewBooksDataApiService(
     //매일 아침 9시 50분
 //    @Scheduled(cron = "0 50 9 * * *")
     //매주 월요일 0시 0분 0초에 실행
-    @Scheduled(cron = "0 0 10 ? * MON")
+//    @Scheduled(cron = "0 0 10 ? * MON")
     fun fetchNewDataToday() {
         println("신간 스케줄 실행")
         try {
@@ -76,7 +76,7 @@ class NewBooksDataApiService(
     }
 
 //    @Scheduled(cron = "0 54 17 * * *")
-    @Scheduled(cron = "0 0 10 ? * MON")
+//    @Scheduled(cron = "0 0 10 ? * MON")
     fun fetchForeignDataToday() {
         println("외서 스케줄 실행")
         try {
