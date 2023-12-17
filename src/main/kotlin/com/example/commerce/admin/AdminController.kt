@@ -66,8 +66,9 @@ class AdminController(private val adminService: AdminService) {
         }
         if (todayData != null) {
             return ResponseEntity.status(HttpStatus.OK).body(todayData)
+        } else {
+            return ResponseEntity.status(HttpStatus.OK).body(null)
         }
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
 
     }
     @GetMapping("/upload-files")
