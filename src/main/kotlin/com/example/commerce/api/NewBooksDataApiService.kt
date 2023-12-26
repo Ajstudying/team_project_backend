@@ -120,6 +120,9 @@ class NewBooksDataApiService(
         }
     }
 
+    //파라미터 연결의 다양한 방법이 있는데
+    // 클라이언트 연결부터 잘 안돼서 애먹으면서 다양한 파라미터 연결 법을 찾았다.
+    //mapOf보다 두번째 쓴 방법이 코틀린스러운 거 같아서 아래의 방법으로 채택했다.
     fun searchApi(keyword:String, size:Int, page:Int, searchTarget:String )
     : Pair<Int, List<SearchDataResponse>>?{
         try {

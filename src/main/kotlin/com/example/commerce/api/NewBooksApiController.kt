@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
+//알라딘 컨트롤러
 @RestController
 @RequestMapping("/api/book-commerce/aladin")
 class NewBooksApiController (private  val newBooksDataApiService: NewBooksDataApiService){
@@ -38,6 +39,10 @@ class NewBooksApiController (private  val newBooksDataApiService: NewBooksDataAp
         return ResponseEntity.status(HttpStatus.OK).build()
     }
 
+    //알라딘 검색 api 연결
+    // return 데이터를 if/else로 나눠서 처리 하고 싶었는데 그 부분이 까다로웠다.
+    //만약에라도 알라딘 api 쪽에서 오류가 생겼거나 데이터가 null로 날아왔을 때를 대비해서
+    // 내 db 북스 데이터가 전체 조회되도록 했다.
     @GetMapping("/search")
     fun apiSearchData(
         @RequestParam size: Int, @RequestParam page: Int,

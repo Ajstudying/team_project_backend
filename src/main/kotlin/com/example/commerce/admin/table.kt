@@ -8,6 +8,7 @@ import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.context.annotation.Configuration
 
+//오늘의 책 저장 테이블
 object TodayBook: LongIdTable("today_book"){
     val cover = varchar("cover", 512)
     val title = varchar("title", 512)
@@ -18,6 +19,7 @@ object TodayBook: LongIdTable("today_book"){
     val createdDate = varchar("created_date",32)
 }
 
+//조회수 저장 테이블
 object HitsTable: LongIdTable("hits_table"){
     val itemId = integer("item_id")
     val profileId = reference("profile_id", Profiles).nullable()

@@ -11,6 +11,9 @@ import org.springframework.data.domain.Page
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestParam
 
+//레디스에 넣을 데이터를 아래와 같은 형식으로 만듬
+//혹시나 다른 쪽에서 주는 데이터를 레디스로 넣게 될 수도 있을 거 같아서 만들었으나
+//현재는 내 db 데이터로 내보내고 있음.
 @FeignClient(name="books")
 interface MyBooksClient {
 

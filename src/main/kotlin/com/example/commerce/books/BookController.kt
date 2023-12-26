@@ -39,6 +39,8 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
         return service.getCachedBookList()
     }
 
+    //초창기 레디스 연결을 시도할 때 사용했던 book-list 데이터
+    //현재 도서몰에는 사용되고 있진 않다.
     @GetMapping("/book-list")
     fun fetch() = transaction() {
         val b = Books
@@ -51,6 +53,7 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
         )}
     }
 
+    //베스트셀러 목록 레디스 연결
     @GetMapping("/best-list")
     fun getBestList()
             : List<BookBestResponse > = transaction (Connection.TRANSACTION_READ_COMMITTED, readOnly = true){
@@ -111,6 +114,8 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
 
     }
 
+    //레디스 연결 전에 사용했던 베스트셀러 db 조회
+    //현재는 베스트 셀러 카테고리에서 사용 중이다.
     @GetMapping("/best")
     fun pagingBest(@RequestParam size: Int, @RequestParam page: Int)
     : Page<BookBestResponse > = transaction (Connection.TRANSACTION_READ_COMMITTED, readOnly = true){
@@ -184,7 +189,8 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
 
 //        return@transaction PageImpl(books, PageRequest.of(page, size), books.size.toLong())
     }
-    //베스트 카테고리
+
+    //베스트셀러 사이드바 조회
     @GetMapping("/best/category")
     fun pagingBestCategory(@RequestParam size: Int, @RequestParam page: Int,  @RequestParam option: String?)
             : Page<BookBestResponse > = transaction (Connection.TRANSACTION_READ_COMMITTED, readOnly = true){
@@ -224,7 +230,8 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
 
         return@transaction PageImpl(books, PageRequest.of(page, size), totalItemCount)
     }
-    // 신간 조회
+    // 신간 조회 / 알라딘에서 받아온 데이터가 저장되어있는 신간도서 테이블에서
+    // 북스 테이블로 통합하기 위한 함수
     @GetMapping("/new")
     fun fetchNew(): List<BookDataResponse>
     = transaction (Connection.TRANSACTION_READ_COMMITTED, readOnly = true)
@@ -243,6 +250,8 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
             }
         return@transaction content
     }
+    // 외서 조회 / 알라딘에서 받아온 데이터가 저장되어있는 외국도서 테이블에서
+    // 북스 테이블로 통합하기 위한 함수
     @GetMapping("foreign")
     fun fetchForeign() : List<BookDataResponse> = transaction (Connection.TRANSACTION_READ_COMMITTED, readOnly = true)
     {
@@ -402,7 +411,9 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
 //        }
     }
 
-    //검색
+    //검색 / 알라딘 검색 api 연결 전에 사용했던 검색 기능.
+    // "해리 포터" 로 저장되어 있는 db 조회 검색으로는 "해리포터"로 검색했을 때 제대로 안나오기 때문에
+    // 클라이언트 입장에서 불편할 것으로 사료돼 알라딘 검색 api 연결로 수정 변경함
     @GetMapping("/paging/search")
     fun searchPaging(
         @RequestParam size: Int, @RequestParam page: Int, @RequestParam option: String?, @RequestParam keyword: String?
@@ -499,7 +510,9 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
         ResponseEntity.status(HttpStatus.NOT_FOUND).build()
     }
 
-    //도서상세
+    //알라딘 api 로 검색된 도서들로도 상세페이지를 보고 싶어하는 클라이언트가 있을 것이라 생각돼
+    // 알라딘 api로 들어오는 itemId로 우리 도서몰 쪽 상세페이지 확인이 가능하도록 함.
+    // not found 라는 응답이 나가면 프론트에서 해결하도록 처리
     @GetMapping("/itemId")
     fun selectSearchBook(
             @RequestParam itemId: Int)
@@ -760,6 +773,9 @@ class BookController (private val resourceLoader: ResourceLoader, private val se
         return ResponseEntity.ok().build()
     }
 
+    //신간 도서 재고가 입고됐을 때 업데이트 된 알림 테이블 조회 함수
+    //알림 테이블 업데이트 쪽에 같이 둘까 하다가 프론트에 내보내는 데이터들을 같이 모아 두는 게 나을 것 같아서
+    //북스 컨트롤러에 같이 둠.
     @Auth
     @GetMapping("/alam")
     fun getAlamData(@RequestAttribute authProfile: AuthProfile): List<AlamBookResponse>{

@@ -28,6 +28,7 @@ class AuthController(private val service: AuthService) {
         }
     }
 
+    //referer 값으로 나눠진 클라이언트들의 로그인이 잘 되도록 했다.
     @PostMapping(value = ["/signin"])
     fun signIn(
         @RequestParam userid: String,

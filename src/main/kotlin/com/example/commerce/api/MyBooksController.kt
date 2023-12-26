@@ -17,7 +17,7 @@ import java.lang.Long
 import java.lang.Long.min
 import java.sql.Connection
 
-
+//레디스 컨트롤러
 @RestController
 @RequestMapping("/api/book-commerce/redis")
 class MyBooksController(private val myBooksService: MyBooksService,

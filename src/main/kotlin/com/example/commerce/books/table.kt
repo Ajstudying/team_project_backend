@@ -71,6 +71,7 @@ object AlamBooks: LongIdTable("alam_books"){
     val profileId = reference("profile_id", Profiles)
 }
 
+//신간 테이블
 object NewBooks : LongIdTable("new_books") {
     val publisher = varchar("publisher", 32)
     val title = varchar("title", 255)
@@ -90,6 +91,7 @@ object NewBooks : LongIdTable("new_books") {
     val customerReviewRank = integer("customer_review_rank")
 }
 
+//외국도서 테이블
 object ForeignBooks : LongIdTable("foreign_books") {
     val publisher = varchar("publisher", 32)
     val title = varchar("title", 255)

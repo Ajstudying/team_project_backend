@@ -154,6 +154,8 @@ class AdminService(
 
     }
 
+    //도서 상세페이지 조회 시에 딜레이가 생기지 않도록 async로 따로 비동기 처리
+    //백오피스로 레빗 전송
     @Async
     fun sendRabbitData(itemId:Int){
 
@@ -199,6 +201,7 @@ class AdminService(
         }
     }
 
+    //재고 오늘 날짜로 재고 업데이트/ 알림테이블 업데이트 - 백오피스 api
 //    @Scheduled(cron = "0 */5 * * * *")
     fun fetchStockStatusData() {
         val currentDateTime = LocalDateTime.now()
