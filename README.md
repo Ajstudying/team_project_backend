@@ -1,7 +1,7 @@
 <div align="center">
   <h2>도서몰 팀프로젝트 백엔드 입니다.👋</h2>
 </div>
-🔭 작업에 사용된 기술 스펙<br> 
+🔭 작업에 사용된 기술 스텍<br> 
 <div>
  <img vertical align="center" src="https://img.shields.io/badge/JAVA-007396?style=flat-square&logo=java&logoColor=white"> 
   <img vertical align="center" src="https://img.shields.io/badge/springboot-6DB33F?style=flat-square&logo=springboot&logoColor=white"/> 
